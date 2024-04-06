@@ -172,6 +172,7 @@ import time
 
 # Global variable
 CLIENTS = []
+LAST_CLIENT_JOIN_TIME = 0
 
 # Define server address and port
 UDP_SERVER_ADDRESS = ('', 8888)
@@ -189,9 +190,10 @@ YES_NO_QUESTIONS = [
 
 # Function to handle UDP broadcast
 def send_broadcast():
+    global LAST_CLIENT_JOIN_TIME
     udp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    while not CLIENTS:
+    while time.time() - LAST_CLIENT_JOIN_TIME < 10 or not CLIENTS:
         udp_server_socket.sendto(BROADCAST_MESSAGE.encode('utf-8'), ('<broadcast>', 8889))
         print("Broadcast message sent.")
         time.sleep(1)
@@ -199,6 +201,7 @@ def send_broadcast():
 
 # Function to handle TCP connection
 def handle_tcp_connection():
+    global LAST_CLIENT_JOIN_TIME
     tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_server_socket.bind(TCP_SERVER_ADDRESS)
     tcp_server_socket.listen(5)  # Listen for up to 5 clients
@@ -209,6 +212,7 @@ def handle_tcp_connection():
         try:
             client_socket, client_address = tcp_server_socket.accept()
             print(f"Connection established with client: {client_address}")
+            LAST_CLIENT_JOIN_TIME = time.time()
             CLIENTS.append(client_socket)
             client_thread = threading.Thread(target=handle_client, args=(client_socket,))
             client_thread.start()
