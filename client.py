@@ -114,6 +114,7 @@
 
 
 import socket
+import time
 
 # Define server address and port for UDP
 UDP_SERVER_ADDRESS = ('<broadcast>', 8889)
@@ -193,7 +194,7 @@ def state_game_mode():
                 break
 
             print("Question from server:", question)
-
+            print(time.time())
             # Get answer from the user
             answer = input("Your answer: ")
 
