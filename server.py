@@ -165,13 +165,14 @@
 
 
 
-
 import socket
 import threading
 import time
 
-# Global variable
+# Global variables
 CLIENTS = []
+LAST_CLIENT_JOIN_TIME = 0
+GAME_STARTED = False
 
 # Define server address and port
 UDP_SERVER_ADDRESS = ('', 8888)
@@ -189,9 +190,10 @@ YES_NO_QUESTIONS = [
 
 # Function to handle UDP broadcast
 def send_broadcast():
+    global LAST_CLIENT_JOIN_TIME
     udp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    while not CLIENTS:
+    while time.time() - LAST_CLIENT_JOIN_TIME < 5 or not CLIENTS:
         udp_server_socket.sendto(BROADCAST_MESSAGE.encode('utf-8'), ('<broadcast>', 8889))
         print("Broadcast message sent.")
         time.sleep(1)
@@ -199,53 +201,114 @@ def send_broadcast():
 
 # Function to handle TCP connection
 def handle_tcp_connection():
+    global LAST_CLIENT_JOIN_TIME, CLIENTS, GAME_STARTED
     tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_server_socket.bind(TCP_SERVER_ADDRESS)
+    tcp_server_socket.settimeout(10)
     tcp_server_socket.listen(5)  # Listen for up to 5 clients
 
     print("TCP server started, waiting for clients...")
 
-    while True:
+    while time.time() - LAST_CLIENT_JOIN_TIME < 5 or not CLIENTS:
         try:
+            print('tring')
             client_socket, client_address = tcp_server_socket.accept()
             print(f"Connection established with client: {client_address}")
-            CLIENTS.append(client_socket)
-            client_thread = threading.Thread(target=handle_client, args=(client_socket,))
-            client_thread.start()
+            if client_socket not in CLIENTS:
+                LAST_CLIENT_JOIN_TIME = time.time()
+                CLIENTS.append(client_socket)
+                # client_socket.sendall("enter your name here :".encode('utf-8'))
+                # data = client_socket.recv(1024)
+                # print("Client - ", data.decode('utf-8') + " joined!")
+                # # Get answer from the user
+
+                # Send answer to the server
+            if not ( time.time() - LAST_CLIENT_JOIN_TIME < 5 or not CLIENTS):
+                print("HERE!!!! 2")
+                return
+        except socket.timeout:
+            return
         except Exception as e:
             print(f"Error: {e}")
+            continue
 
+    print("HERE!!!!")
     tcp_server_socket.close()
+    return
 
-# Function to handle client communication
+# Function to handle individual client
 def handle_client(client_socket):
+    try:
+        # Add client-specific handling logic here if needed
+        pass
+    except Exception as e:
+        print(f"Error handling client: {e}")
+def start_game():
+    # Send game start message to clients
+    # for client_socket in CLIENTS:
+    #     try:
+    #         client_socket.sendall("Game started! Get ready to answer questions.".encode('utf-8'))
+    #     except Exception as e:
+    #         print(f"Error sending game start message to client: {e}")
+
+    # Initialize dictionary to store client answers
+    global client_answers
+    client_answers = {}
+
+    # Handle game logic sequentially
     for question, correct_answer in YES_NO_QUESTIONS:
+        print(f"Question: {question}")
         try:
-            # Ask a question
-            client_socket.sendall(question.encode('utf-8'))
 
-            # Receive answer from the client
-            answer = client_socket.recv(1024).decode('utf-8')
-            print(f"Received answer from client: {answer}")
+            # Send game start message to clients
+            for client_socket in CLIENTS:
+                try:
+                    client_socket.sendall(question.encode('utf-8'))
+                except Exception as e:
+                    print(f"Error sending game start message to client: {e}")
 
-            # Check if the answer is correct
-            if answer.strip().lower() == correct_answer.lower():
-                feedback = "Correct!"
-            else:
-                feedback = "Wrong!"
+            # Start a thread to receive answer from each client
+            answer_threads = []
+            for client_socket in CLIENTS:
+                answer_thread = threading.Thread(target=receive_answer, args=(client_socket,))
+                answer_threads.append(answer_thread)
+                answer_thread.start()
 
-            # Send feedback to the client
-            client_socket.sendall(feedback.encode('utf-8'))
+            # Wait for all answer-receiving threads to finish
+            for answer_thread in answer_threads:
+                answer_thread.join()
 
+            # Evaluate answers and send feedback to clients
+            for client_socket, (answer, _) in client_answers.items():
+                feedback = "Correct!" if answer.lower() == correct_answer.lower() else "Wrong!"
+                client_socket.sendall(feedback.encode('utf-8'))
+                if feedback == "Correct!":
+                    print(client_socket, " is correct!")
+                else:
+                    print(client_socket, " is incorrect!")
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error handling game logic: {e}")
             break
 
-    client_socket.close()
+    # Game over
+    print("Game over.")
+
+def receive_answer(client_socket):
+    answer = client_socket.recv(1024).decode('utf-8').strip()
+    client_answers[client_socket] = (answer, time.time())
+
 
 # Start a thread for UDP broadcast
 udp_thread = threading.Thread(target=send_broadcast)
 udp_thread.start()
+print("!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
-# Start TCP server
-handle_tcp_connection()
+# Start TCP server in a separate thread
+tcp_thread = threading.Thread(target=handle_tcp_connection)
+tcp_thread.start()
+
+# Wait for TCP thread to finish before proceeding to start the game
+tcp_thread.join()
+print("*******************************")
+# Start the game once all clients have connected
+start_game()

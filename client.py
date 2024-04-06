@@ -114,6 +114,7 @@
 
 
 import socket
+import time
 
 # Define server address and port for UDP
 UDP_SERVER_ADDRESS = ('<broadcast>', 8889)
@@ -153,6 +154,7 @@ def state_connecting_to_server():
     try:
         tcp_client_socket.connect(TCP_SERVER_ADDRESS)
         print("Connected to TCP server.")
+        # receive_data_from_network(tcp_client_socket)
         return STATE_GAME_MODE
     except Exception as e:
         print("Failed to connect to server:", e)
@@ -172,9 +174,16 @@ def receive_data_from_network(tcp_socket):
     while True:
         try:
             data = tcp_socket.recv(1024)
+
+            print("Received from server:", data.decode('utf-8'))
+            # Get answer from the user
+            answer = input("Your answer: ")
+
+            # Send answer to the server
+            tcp_client_socket.sendall(answer.encode('utf-8'))
             if not data:
                 break
-            print("Received from server:", data.decode('utf-8'))
+
         except Exception as e:
             print("Error receiving data from server:", e)
             break
@@ -193,7 +202,7 @@ def state_game_mode():
                 break
 
             print("Question from server:", question)
-
+            print(time.time())
             # Get answer from the user
             answer = input("Your answer: ")
 
