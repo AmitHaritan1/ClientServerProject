@@ -251,12 +251,12 @@ def start_game():
 
     # Handle game logic sequentially
     for question, correct_answer in YES_NO_QUESTIONS:
+        print(f"Question: {question}")
         try:
 
             # Send game start message to clients
             for client_socket in CLIENTS:
                 try:
-                    print(f"Question: {question}")
                     client_socket.sendall(question.encode('utf-8'))
                 except Exception as e:
                     print(f"Error sending game start message to client: {e}")
@@ -276,6 +276,10 @@ def start_game():
             for client_socket, (answer, _) in client_answers.items():
                 feedback = "Correct!" if answer.lower() == correct_answer.lower() else "Wrong!"
                 client_socket.sendall(feedback.encode('utf-8'))
+                if feedback == "Correct!":
+                    print(client_socket, " is correct!")
+                else:
+                    print(client_socket, " is incorrect!")
         except Exception as e:
             print(f"Error handling game logic: {e}")
             break
