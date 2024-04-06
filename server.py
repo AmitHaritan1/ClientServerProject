@@ -171,6 +171,7 @@ import time
 
 # Global variables
 CLIENTS = []
+clients_names = dict()
 LAST_CLIENT_JOIN_TIME = 0
 GAME_STARTED = False
 
@@ -233,10 +234,21 @@ def handle_tcp_connection():
 # Function to handle individual client
 def handle_client(client_socket):
     try:
-        # Add client-specific handling logic here if needed
-        pass
+        # Prompt client for their name
+        client_socket.sendall("Please enter your name: ".encode('utf-8'))
+        name = client_socket.recv(1024).decode('utf-8').strip()
+        print(f"Client {name} connected.")
+
+        # Add client to the list of clients
+        clients_names[client_socket]=  name
+
+        # Continue handling game logic or other communication with the client
+        # For example:
+        # client_socket.sendall("Welcome to the game, {name}!".encode('utf-8'))
+        # ...
     except Exception as e:
         print(f"Error handling client: {e}")
+
 def start_game():
     # Send game start message to clients
     # for client_socket in CLIENTS:
