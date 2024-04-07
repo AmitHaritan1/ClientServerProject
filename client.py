@@ -221,6 +221,7 @@ def state_game_mode():
 
     # Close the TCP socket
     tcp_client_socket.close()
+    return STATE_LOOKING_FOR_SERVER
 
 # Main function to run the client
 def run_client():
@@ -232,7 +233,7 @@ def run_client():
         elif current_state == STATE_CONNECTING_TO_SERVER:
             current_state = state_connecting_to_server()
         elif current_state == STATE_GAME_MODE:
-            state_game_mode()
+            current_state = state_game_mode()
 
 # Run the client
 run_client()
