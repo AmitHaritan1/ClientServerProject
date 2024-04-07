@@ -254,7 +254,6 @@ def start_game():
     # Initialize dictionary to store client answers
     global client_answers
     client_answers = {}
-    try2 = None
 
     # Handle game logic sequentially
     for question, correct_answer in YES_NO_QUESTIONS:
