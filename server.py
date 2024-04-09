@@ -1,167 +1,3 @@
-# import socket
-#
-# # Define server address and port
-# SERVER_ADDRESS = ('localhost', 8888)
-#
-# # Create a UDP socket
-# udp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#
-# # Bind the socket to the server address and port
-# udp_server_socket.bind(SERVER_ADDRESS)
-# print("UDP server is listening...")
-#
-# while True:
-#     try:
-#         # Receive data from the client
-#         data, client_address = udp_server_socket.recvfrom(1024)
-#         print(f"Received data from {client_address}: {data.decode('utf-8')}")
-#
-#         # Process the data (for trivia game, you'd ask a question here)
-#         response = "What's your answer?"
-#
-#         # Send response back to the client
-#         udp_server_socket.sendto(response.encode('utf-8'), client_address)
-#     except ConnectionResetError as e:
-#         print(f"ConnectionResetError: {e}")
-#         # Continue listening for incoming connections
-#         continue
-#     except Exception as e:
-#         print(f"Error: {e}")
-#         # Handle other exceptions as needed
-#
-
-## try 2
-
-# import socket
-# import time
-#
-# # Define server address and port
-# SERVER_ADDRESS = ('localhost', 8888)
-#
-# # Define trivia questions and answers
-# TRIVIA = [
-#     ("What is the capital of France?", "Paris"),
-#     ("What is the largest planet in our solar system?", "Jupiter"),
-#     ("What is the chemical symbol for water?", "H2O")
-# ]
-#
-# # Create a UDP socket
-# udp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#
-# # Bind the socket to the server address and port
-# udp_server_socket.bind(SERVER_ADDRESS)
-# print("UDP server is listening...")
-#
-# # Main loop
-# for question, answer in TRIVIA:
-#     try:
-#         # Send question to the client
-#         udp_server_socket.sendto(question.encode('utf-8'), ('localhost', 8888))
-#         time.sleep(3)
-#         # Receive answer from the client
-#         data, client_address = udp_server_socket.recvfrom(1024)
-#         client_answer = data.decode('utf-8').strip().lower()
-#
-#         # Check if the answer is correct
-#         if client_answer == answer.lower():
-#             feedback = "Correct!"
-#         else:
-#             feedback = f"Wrong! The correct answer is: {answer}"
-#
-#         # Send feedback to the client
-#         udp_server_socket.sendto(feedback.encode('utf-8'), client_address)
-#
-#     except Exception as e:
-#         print(f"Error: {e}")
-#
-# # Close the socket
-# udp_server_socket.close()
-
-#
-# import socket
-# import threading
-# import time
-#
-# # Global variables
-# CLIENT_CONNECTED = False
-#
-# # Define server address and port
-# UDP_SERVER_ADDRESS = ('', 8888)
-# TCP_SERVER_ADDRESS = ('', 8889)
-#
-# # Define the broadcast message
-# BROADCAST_MESSAGE = "Hello, this is the server!"
-#
-# # Define a list of yes or no questions and correct answers
-# YES_NO_QUESTIONS = [
-#     ("Is Paris the capital of France?", "Y"),
-#     ("Is Jupiter the largest planet in our solar system?", "Y"),
-#     ("Is the chemical symbol for water H2O?", "Y")
-# ]
-#
-# # Function to handle UDP broadcast
-# def send_broadcast():
-#     udp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#     udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-#     while not CLIENT_CONNECTED:
-#         udp_server_socket.sendto(BROADCAST_MESSAGE.encode('utf-8'), ('<broadcast>', 8889))
-#         print("Broadcast message sent.")
-#         time.sleep(1)
-#     udp_server_socket.close()
-#
-# # Function to handle TCP connection
-# def handle_tcp_connection():
-#     global CLIENT_CONNECTED
-#     tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     tcp_server_socket.bind(TCP_SERVER_ADDRESS)
-#     tcp_server_socket.listen(1)  # Listen for just one client
-#     print("TCP server started, waiting for a client to connect...")
-#     client_socket, client_address = tcp_server_socket.accept()
-#     print(f"Connection established with client: {client_address}")
-#     CLIENT_CONNECTED = True  # Set flag to indicate client connection
-#     # while True:
-#     #     # Receive data from the client
-#     #     data = client_socket.recv(1024).decode('utf-8')
-#     #     if not data:
-#     #         break
-#     #     print(f"Received from client: {data}")
-#     #     masage_back = "hello TCP client!"
-#     #     # Send data back to the client
-#     #     client_socket.sendall(masage_back.encode('utf-8'))
-#     # You can add logic here to handle communication with the client over TCP
-#
-#     # After the client connection is established
-#     for question, correct_answer in YES_NO_QUESTIONS:
-#         # Ask a question
-#         client_socket.sendall(question.encode('utf-8'))
-#
-#         # Receive answer from the client
-#         answer = client_socket.recv(1024).decode('utf-8')
-#         print(f"Received answer from client: {answer}")
-#
-#         # Check if the answer is correct
-#         if answer.strip().lower() == correct_answer.lower():
-#             feedback = "Correct!"
-#         else:
-#             feedback = "Wrong!"
-#
-#         # Send feedback to the client
-#         client_socket.sendall(feedback.encode('utf-8'))
-#
-#     # Send feedback to the client
-#     client_socket.sendall(feedback.encode('utf-8'))
-#
-#     client_socket.close()
-#     tcp_server_socket.close()
-#
-# # Start a thread for UDP broadcast
-# udp_thread = threading.Thread(target=send_broadcast)
-# udp_thread.start()
-#
-# # Start TCP server
-# handle_tcp_connection()
-
-
 import socket
 import threading
 import time
@@ -172,9 +8,10 @@ class Server:
         self.udp_port = 13117
         self.tcp_port = 0
         self.MAGIC_COOKIE = 0xabcddcba.to_bytes(4, byteorder='big')
-        self.server_name = "The best trivia server ever".ljust(32).encode('utf-8')
+        self.server_name = "The best trivia server ever"
         self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.offer_message = ''
+        self.ip_address=socket.gethostbyname(socket.gethostname())
         # Global variables
         self.clients = {}
         self.last_client_join_time = 0
@@ -280,7 +117,8 @@ class Server:
 
     # Function to handle UDP broadcast
     def send_offer(self):
-        self.offer_message = self.MAGIC_COOKIE + b'\x02' + self.server_name + self.tcp_port.to_bytes(2, byteorder='big')
+        self.offer_message = (self.MAGIC_COOKIE + b'\x02' + self.server_name.ljust(32).encode('utf-8') +
+                              self.tcp_port.to_bytes(2, byteorder='big'))
         udp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -297,14 +135,12 @@ class Server:
             try:
                 client_socket, client_address = self.tcp_server_socket.accept()
                 self.last_client_join_time = time.time()
-                client_socket.setblocking(True)
+                client_socket.setblocking(False)
                 print(f"Connection established with client: {client_address}")
                 threading.Thread(target=self.handle_client, args=(client_socket,)).start()
             except socket.error as e:
                 time.sleep(1)
         # TODO: think what do we want to do with clients connecting to the server once the game started
-        self.tcp_server_socket.close()
-
 
     # Function to handle individual client
     def handle_client(self, client_socket):
@@ -338,7 +174,7 @@ class Server:
             time.sleep(1)
 
     def print_round(self, game_round):
-        names = self.clients.keys()
+        names = list(self.clients.values())
         if len(names) > 1:
             result = ', '.join(names[:-1]) + ' and ' + names[-1]
         else:
@@ -353,15 +189,16 @@ class Server:
                 player_name = self.clients[client_socket]
                 print(f"Error while sending info to client {player_name}: {e}")
     def welcome_message(self):
-        welcome = f"Welcome to the {self.server_name} server, where we are answering intriguing trivia questions!"
+        welcome = f"Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions!"
         print(welcome)
         self.send_to_all_clients(welcome)
-        for i, name in enumerate(self.clients.keys()):
+        for i, name in enumerate(self.clients.values()):
             player_string = f"Player {i+1}: {name}"
             print(player_string)
-            self.send_to_all_clients(player_string)
+            self.send_to_all_clients(player_string+"\n")
         print("=====================================")
-        self.send_to_all_clients("=====================================")
+        self.send_to_all_clients("=====================================\n")
+
     # Function to start the game
     def start_game(self):
         self.welcome_message()
@@ -375,17 +212,25 @@ class Server:
             print(question)
             try:
                 self.send_to_all_clients(question)
-                answer_threads = []
-                for client_socket in self.clients.keys():
-                    answer_thread = threading.Thread(target=self.receive_answer, args=(question, client_socket,))
-                    answer_threads.append(answer_thread)
-                    answer_thread.start()
+                # answer_threads = []
+                # for client_socket in self.clients.keys():
+                #     answer_thread = threading.Thread(target=self.receive_answer, args=(question, client_socket,))
+                #     answer_threads.append(answer_thread)
+                #     answer_thread.start()
                 # Start a timer for 10 seconds
-                timer_thread = threading.Thread(target=self.start_timer, args=(time.time(),))
-                timer_thread.start()
-                timer_thread.join()
-
-                for client_socket, (answer, _) in self.client_answers.items():
+                # timer_thread = threading.Thread(target=self.start_timer, args=(time.time(),))
+                # timer_thread.start()
+                # timer_thread.join()
+                time.sleep(10)
+                for client_socket in self.clients.keys():
+                    try:
+                        answer = client_socket.recv(1024).decode('utf-8').strip()
+                        self.client_answers[client_socket] = answer
+                    except socket.error as e:
+                        # no answer from client
+                        print(e)
+                        self.client_answers[client_socket] = 'Z'
+                for client_socket, answer in self.client_answers.items():
                     player_name = self.clients[client_socket]
                     feedback = True if answer in correct_answer else False
                     if feedback:
@@ -399,25 +244,36 @@ class Server:
 
                 # If not all clients answered the wrong question - remove all the clients that answered wrong
                 correct_clients = [client_socket for client_socket, answer in self.client_answers.items() if answer in correct_answer]
+                looseres = []
                 if len(correct_clients) == 1:  # if we found our winner
                     winner_name = self.clients[correct_clients[0]]
                     print(f"{winner_name} wins!")
-                    for client_socket in self.clients.keys():
-                        client_socket.sendall(f"{winner_name} wins!".encode('utf-8'))
-                        client_socket.close()
-                        del self.clients[client_socket]
+                    self.send_to_all_clients(f"{winner_name} wins!\n")
+                    print("Game over!")
+                    self.send_to_all_clients("Game over!\n")
+                    print(f"Congratulations to the winner: {winner_name}")
+                    self.send_to_all_clients(f"Congratulations to the winner: {winner_name}\n")
+                    print("Game over, sending out offer requests...")
+                    looseres = list(self.clients.keys())
                 elif len(correct_clients) > 1 and len(correct_clients) != len(self.clients):
-                    for client_socket, (answer, _) in self.client_answers.items():
+                    for client_socket, answer in self.client_answers.items():
                         if answer not in correct_answer:
                             client_socket.sendall("You lost - Game over!".encode('utf-8'))
-                            client_socket.close()
-                            del self.clients[client_socket]
+                            looseres.append(client_socket)
+                for client_socket in looseres:
+                    del self.clients[client_socket]
+                    client_socket.close()
+                self.client_answers = {}
             except Exception as e:
                 print(f"Error handling game logic: {e}")
-                break
-            finally:
-                self.client_answers = {}
-        print("Game over!")
+                #break
+        self.tcp_server_socket.close()
+        self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp_port = 0
+        self.client_answers = {}
+        self.game_mode = False
+        self.current_question_index = 0
+
 
     # Function to receive answer from a client
     def receive_answer(self, question, client_socket):
@@ -430,20 +286,22 @@ class Server:
 
     # Main function to start the server
     def start_server(self):
-        self.tcp_server_socket.bind(('', self.tcp_port))
-        self.tcp_port = self.tcp_server_socket.getsockname()[1]
-        self.tcp_server_socket.setblocking(False)  # Set non-blocking mode
-        self.tcp_server_socket.listen()
-        print("TCP server started, waiting for clients...")
 
-        udp_thread = threading.Thread(target=self.send_offer)
-        tcp_thread = threading.Thread(target=self.handle_tcp_connection)
-        udp_thread.start()
-        tcp_thread.start()
+        print(f"server started, listening on IP address {self.ip_address}")
+        while True:
+            self.tcp_server_socket.bind(('', self.tcp_port))
+            self.tcp_port = self.tcp_server_socket.getsockname()[1]
+            self.tcp_server_socket.setblocking(False)  # Set non-blocking mode
+            self.tcp_server_socket.listen()
+            tcp_thread = threading.Thread(target=self.handle_tcp_connection)
+            tcp_thread.start()
+            udp_thread = threading.Thread(target=self.send_offer)
+            udp_thread.start()
+            udp_thread.join()
+            tcp_thread.join()
+            self.start_game()
 
-        udp_thread.join()
-        tcp_thread.join()
-        self.start_game()
+
 
 # Create an instance of the GameServer class and start the server
 if __name__ == "__main__":
