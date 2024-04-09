@@ -115,140 +115,112 @@
 
 import socket
 import time
-
-# Define server address and port for UDP
-UDP_SERVER_ADDRESS = ('<broadcast>', 8889)
-
-# Define server address and port for TCP
-TCP_SERVER_ADDRESS = ('localhost', 8889)
-
-# Define the UDP broadcast message
-BROADCAST_MESSAGE = "Hello, this is the server!"
-
-# Define client states
-STATE_LOOKING_FOR_SERVER = 0
-STATE_CONNECTING_TO_SERVER = 1
-STATE_GAME_MODE = 2
-
-# Define TCP socket
-tcp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-# Function to handle state: Looking for a server
-def state_looking_for_server():
-    udp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    udp_client_socket.bind(('0.0.0.0', 8889))
-    udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-    print("Looking for server...")
-    while True:
-        data, server_address = udp_client_socket.recvfrom(1024)
-        message = data.decode('utf-8')
-        if message == BROADCAST_MESSAGE:
-            print("Received UDP broadcast message:", message)
-            udp_client_socket.close()
-            return STATE_CONNECTING_TO_SERVER
-
-# Function to handle state: Connecting to a server
-def state_connecting_to_server():
-    try:
-        tcp_client_socket.connect(TCP_SERVER_ADDRESS)
-        print("Connected to TCP server.")
-        # receive_data_from_network(tcp_client_socket)
-        return STATE_GAME_MODE
-    except Exception as e:
-        print("Failed to connect to server:", e)
-        return STATE_LOOKING_FOR_SERVER
-
-# Function to handle state: Game mode
-import socket
 import threading
 import sys
 import select
+from random import random
 
-# Define server address and port for TCP
-TCP_SERVER_ADDRESS = ('localhost', 8889)
 
-# Function to handle receiving data from the network
-def receive_data_from_network(tcp_socket):
-    while True:
+STATE_LOOKING_FOR_SERVER = 0
+STATE_CONNECTING_TO_SERVER = 1
+STATE_GAME_MODE = 2
+class Client:
+    def __init__(self):
+        self.name = 'Chovav'+'\n' #TODO: randomly pick names
+        # Define server address and port for UDP
+        self.udp_listen_address = ('0.0.0.0', 13117)
+        self.tcp_server_address = None
+        # Define client states
+        self.state = STATE_LOOKING_FOR_SERVER
+        # Define TCP socket
+        self.tcp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.MAGIC_COOKIE = 0xabcddcba.to_bytes(4, byteorder='big')
+
+
+    # Function to handle state: Looking for a server
+    def state_looking_for_server(self):
+        udp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        udp_client_socket.bind(self.udp_listen_address)
+        udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+        print("Looking for server...")
+        while True: #TODO: consider changing the condition or adding sleep
+            data, server_address = udp_client_socket.recvfrom(1024)
+            magic_cookie = data[:4]
+            message_type = data[4]
+            if magic_cookie == self.MAGIC_COOKIE and message_type == 2:
+                server_name = data[5:37].decode('utf-8').strip()
+                tcp_port = int.from_bytes(data[37:], byteorder='big')
+                print("Received offer from server:", server_name)
+                print("Server address:", server_address[0])
+                print("TCP port:", tcp_port)
+                print("Attempting to connect...")
+                self.tcp_server_address = (server_address[0], tcp_port)
+                udp_client_socket.close()
+                return STATE_CONNECTING_TO_SERVER
+            time.sleep(1)
+
+
+    # Function to handle state: Connecting to a server
+    def state_connecting_to_server(self):
         try:
-            data = tcp_socket.recv(1024)
-
-            print("Received from server:", data.decode('utf-8'))
-            # Get answer from the user
-            answer = input("Your answer: ")
-
-            # Send answer to the server
-            tcp_client_socket.sendall(answer.encode('utf-8'))
-            if not data:
-                break
-
+            self.tcp_client_socket.connect(self.tcp_server_address)
+            self.tcp_client_socket.sendall(self.name.encode('utf-8'))
+            print("Connected to TCP server.")
+            return STATE_GAME_MODE
         except Exception as e:
-            print("Error receiving data from server:", e)
-            break
+            print("Failed to connect to server:", e)
+            return STATE_LOOKING_FOR_SERVER
 
-# Function to handle game mode
+    # Function to handle state: Game mode
+    def game_mode(self):
+        print("Entering game mode...")
+        while True:
+            try:
+                # TODO: think what should happen if the server closes the connection before sending a question
+                # Receive question from the server
+                question = self.tcp_client_socket.recv(1024).decode('utf-8')
+                if not question:
+                    print("Connection closed by server.")
+                    # Close the TCP socket
+                    self.tcp_client_socket.close()
+                    return STATE_LOOKING_FOR_SERVER
 
-# Function to handle state: Game mode
-def state_game_mode():
-    print("Entering game mode...")
-    while True:
-        try:
-            # Receive question from the server
-            question = tcp_client_socket.recv(1024).decode('utf-8')
-            if not question:
-                print("Connection closed by server.")
-                break
+                print(question)
+                # Get answer from the user
+                answer = input("Your answer: ")
 
-            print("Question from server:", question)
-            print(time.time())
-            # Get answer from the user
-            answer = input("Your answer: ")
+                # Send answer to the server
+                self.tcp_client_socket.sendall(answer.encode('utf-8'))
 
-            # Send answer to the server
-            tcp_client_socket.sendall(answer.encode('utf-8'))
+                # Receive feedback from the server
+                feedback = self.tcp_client_socket.recv(1024).decode('utf-8')
+                print("Feedback from server:", feedback)
 
-            # Receive feedback from the server
-            feedback = tcp_client_socket.recv(1024).decode('utf-8')
-            print("Feedback from server:", feedback)
+            except Exception as e:
+                print("Error:", e)
+                # Close the TCP socket
+                self.tcp_client_socket.close()
+                return STATE_LOOKING_FOR_SERVER
 
 
+    # Main function to run the client
+    def run_client(self):
+        while True:  # TODO: CHANGE IT TO DIFFERENT CONDITION
+            if self.state == STATE_LOOKING_FOR_SERVER:
+                self.state = self.state_looking_for_server()
+            elif self.state == STATE_CONNECTING_TO_SERVER:
+                self.state = self.state_connecting_to_server()
+            elif self.state == STATE_GAME_MODE:
+                self.state = self.game_mode()
 
-        except Exception as e:
-            print("Error:", e)
-            break
+# Create an instance of the GameClient class and run the client
+if __name__ == "__main__":
+    client = Client()
+    client.run_client()
 
-    # Close the TCP socket
-    tcp_client_socket.close()
 
-# Main function to run the client
-def run_client():
-    current_state = STATE_LOOKING_FOR_SERVER
-
-    while True:  # TODO: CHANGE IT TO DIFFERENT CONDITION
-        if current_state == STATE_LOOKING_FOR_SERVER:
-            current_state = state_looking_for_server()
-        elif current_state == STATE_CONNECTING_TO_SERVER:
-            current_state = state_connecting_to_server()
-        elif current_state == STATE_GAME_MODE:
-            state_game_mode()
-
-# Run the client
-run_client()
-
-# import socket
-# import time
-#
-# # Define server address and port for UDP
-# UDP_SERVER_ADDRESS = ('<broadcast>', 8889)
-#
-# # Define server address and port for TCP
-# TCP_SERVER_ADDRESS = ('localhost', 8889)
-#
-# # Define the UDP broadcast message
-# BROADCAST_MESSAGE = "Hello, this is the server!"
-#
 # # Function to receive UDP broadcast message
 # def receive_udp_broadcast():
 #     udp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
