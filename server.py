@@ -162,33 +162,24 @@
 # handle_tcp_connection()
 
 
-
 import socket
 import threading
 import time
 from random import shuffle
 
-
 class Server:
     def __init__(self):
-        self.UDP_PORT = 13117
+        self.udp_port = 13117
         self.tcp_port = 0
-        # Define server address and port
-        #self.UDP_SERVER_ADDRESS = ('', 8888)
-        #self.TCP_SERVER_ADDRESS = ('', 8889)
         self.MAGIC_COOKIE = 0xabcddcba.to_bytes(4, byteorder='big')
         self.server_name = "The best trivia server ever".ljust(32).encode('utf-8')
         self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
         self.offer_message = ''
         # Global variables
         self.clients = {}
         self.last_client_join_time = 0
         self.game_mode = False
         self.client_answers = {}
-        # Define the broadcast message
-        #self.BROADCAST_MESSAGE = "Hello, this is the server!"
-
         # Define a list of yes or no questions and correct answers
         self.trivia_questions = [
             ("Is Paris the capital of France?", "Y"),
@@ -294,8 +285,9 @@ class Server:
         udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         while time.time() - self.last_client_join_time < 10 or not self.clients:
-            udp_server_socket.sendto(self.offer_message, ('<broadcast>', self.UDP_PORT))
+            udp_server_socket.sendto(self.offer_message, ('<broadcast>', self.udp_port))
             print("Offer message sent")
+            # TODO: drop prints when finished debugging
             time.sleep(1)
         self.game_mode = True
         udp_server_socket.close()
@@ -372,7 +364,6 @@ class Server:
         self.send_to_all_clients("=====================================")
     # Function to start the game
     def start_game(self):
-        # TODO: think what should happen if we are out of questions before anyone wins
         self.welcome_message()
         shuffle(self.trivia_questions)
         game_round = 0
@@ -450,6 +441,7 @@ class Server:
         udp_thread.start()
         tcp_thread.start()
 
+        udp_thread.join()
         tcp_thread.join()
         self.start_game()
 

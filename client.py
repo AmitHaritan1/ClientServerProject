@@ -129,8 +129,6 @@ class Client:
         self.name = 'Chovav'+'\n' #TODO: randomly pick names
         # Define server address and port for UDP
         self.udp_listen_address = ('0.0.0.0', 13117)
-        # Define server address and port for TCP
-        #self.tcp_server_address = ('localhost', 8889)
         self.tcp_server_address = None
         # Define client states
         self.state = STATE_LOOKING_FOR_SERVER
@@ -147,7 +145,7 @@ class Client:
         udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
         print("Looking for server...")
-        while True:
+        while True: #TODO: consider changing the condition or adding sleep
             data, server_address = udp_client_socket.recvfrom(1024)
             magic_cookie = data[:4]
             message_type = data[4]
@@ -161,6 +159,7 @@ class Client:
                 self.tcp_server_address = (server_address[0], tcp_port)
                 udp_client_socket.close()
                 return STATE_CONNECTING_TO_SERVER
+            time.sleep(1)
 
 
     # Function to handle state: Connecting to a server
@@ -179,6 +178,7 @@ class Client:
         print("Entering game mode...")
         while True:
             try:
+                # TODO: think what should happen if the server closes the connection before sending a question
                 # Receive question from the server
                 question = self.tcp_client_socket.recv(1024).decode('utf-8')
                 if not question:
@@ -213,7 +213,7 @@ class Client:
             elif self.state == STATE_CONNECTING_TO_SERVER:
                 self.state = self.state_connecting_to_server()
             elif self.state == STATE_GAME_MODE:
-                self.game_mode()
+                self.state = self.game_mode()
 
 # Create an instance of the GameClient class and run the client
 if __name__ == "__main__":
@@ -221,18 +221,6 @@ if __name__ == "__main__":
     client.run_client()
 
 
-# import socket
-# import time
-#
-# # Define server address and port for UDP
-# UDP_SERVER_ADDRESS = ('<broadcast>', 8889)
-#
-# # Define server address and port for TCP
-# TCP_SERVER_ADDRESS = ('localhost', 8889)
-#
-# # Define the UDP broadcast message
-# BROADCAST_MESSAGE = "Hello, this is the server!"
-#
 # # Function to receive UDP broadcast message
 # def receive_udp_broadcast():
 #     udp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
