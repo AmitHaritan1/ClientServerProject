@@ -23,9 +23,20 @@ entertaining_names = [
  'Theodor Herzl', 'Benny Gantz', 'Moshe Sharett', 'Golda Meir', 'Ezer Weizman', 'Yehuda Poliker',
  'Idan Raichel', 'David Levy', 'Bezalel Smotrich', 'Zehava Galon', 'Ayman Odeh', 'Odeya',
  'Sacha Baron Cohen', 'Yael Naim', 'Reuven Rivlin', 'Benny Begin', 'Ayelet Zurer', 'Ehud Barak',
- "Gideon Sa'ar", 'Avi Gabbay', 'Ariel Sharon', 'Shimon Peres', 'Danny Danon', 'Ahmed Tibi',
+ "Gideon Sa'ar", 'Avi Gabbay', 'Ariel Sharon', 'Shimon Peres', 'Danny Danon',
  'Uri Ariel', 'Eliezer Ben-Yehuda'
 ]
+RED = '\033[91m'
+GREEN = '\033[92m'
+YELLOW = '\033[93m'
+BLUE = '\033[94m'
+MAGENTA = '\033[95m'
+CYAN = '\033[96m'
+RESET = '\033[0m'
+
+BOLD = '\033[1m'
+UNDERLINE = '\033[4m'
+ITALIC = '\033[3m'
 
 class Player:
     def __init__(self):
@@ -54,7 +65,7 @@ class Player:
             if magic_cookie == self.MAGIC_COOKIE and message_type == 2:
                 server_name = data[5:37].decode('utf-8').strip()
                 tcp_port = int.from_bytes(data[37:], byteorder='big')
-                print(f"Received offer from server \"{server_name}\" at address {server_address[0]}, attempting to connect...")
+                print("Received offer from server " + BOLD + f"\"{server_name}\" " + RESET + f"at address {server_address[0]}, attempting to connect...")
                 self.tcp_server_address = (server_address[0], tcp_port)
                 udp_client_socket.close()
                 self.tcp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -80,7 +91,7 @@ class Player:
                     break
                 else:
                     print(message)
-            except ConnectionResetError as e:
+            except ConnectionError as e:
                 break
 
             except Exception as e:
