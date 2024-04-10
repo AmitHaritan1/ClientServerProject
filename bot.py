@@ -19,17 +19,25 @@ class Bot(Player):
             try:
                 message = self.tcp_client_socket.recv(1024).decode('utf-8')
                 if not message:
-                    print("Server disconnected, listening for offer requests...")
-                    self.tcp_client_socket.close()
-                    self.state = STATE_LOOKING_FOR_SERVER
                     break
                 else:
                     print(message)
                     if message[:14] == 'True or False:': self.send_ans()
+
+            except ConnectionResetError as e:
+                break
             except Exception as e:
                 print("Error while getting message from the server:", e)
+                break
                 # Close the TCP socket
                 # self.tcp_client_socket.close()
+
+        print("Server disconnected, listening for offer requests...")
+        self.tcp_client_socket.close()
+        self.state = STATE_LOOKING_FOR_SERVER
+
+
+
 
     def send_ans(self):
         try:
