@@ -268,6 +268,7 @@ class Server:
         self._welcome_message()
         shuffle(self.trivia_questions)
         game_round = 0
+        winner_name = "NoWinner"  # initialize parameter
         while self.clients:
             question, correct_answer = self._next_question()
             game_round += 1
@@ -349,7 +350,6 @@ class Server:
                     self._send_to_all_clients(CYAN + f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points!" + RESET)
                     self._send_to_all_clients("Game over!")
 
-                    losers = list(self.clients.keys())
                 elif len(correct_clients) > 1 and len(correct_clients) != len(self.clients):
                     for client_socket, answer in zip(client_sockets, client_answers):
                         if answer not in correct_answer:
@@ -365,14 +365,16 @@ class Server:
                 if len(losers) != len(self.clients):
                     for client_socket in losers:
                         self._disconnect_client(client_socket)
-                self._print_statistics(winner_name)
+                    if len(correct_clients) == 1:
+                        self._disconnect_client(correct_clients[0])
                 self.client_answers = {}
             except Exception as e:
                 print(f"Error handling game logic: {e}")
-                for client_socket in self.clients.keys():
+                client_sockets = list(self.clients.keys())
+                for client_socket in client_sockets:
                     self._disconnect_client(client_socket)
                 break
-
+        self._print_statistics(winner_name)
         self.tcp_server_socket.close()
         self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.tcp_port = 0
@@ -398,15 +400,6 @@ class Server:
             self.all_time_wins[max(self.all_time_wins, key=self.all_time_wins.get)]) + " wins")
         print(BOLD + "Game over, sending out offer requests..." + RESET)
         print()
-
-    # Function to receive answer from a client
-    def _receive_answer(self, question, client_socket):
-        answer = client_socket.recv(1024).decode('utf-8').strip()
-        while answer not in ['Y','T','N','F',0,1]:
-            client_socket.sendall(self.invalid_answer_message.encode('utf-8'))
-            client_socket.sendall(question.encode('utf-8'))
-            answer = client_socket.recv(1024).decode('utf-8').strip()
-        self.client_answers[client_socket] = answer
 
     # Main function to start the server
     def start_server(self):
