@@ -362,8 +362,9 @@ class Server:
                                     break
                             except Exception as a:
                                 self._disconnect_client(client_socket)
-                for client_socket in losers:
-                    self._disconnect_client(client_socket)
+                if len(losers) != len(self.clients):
+                    for client_socket in losers:
+                        self._disconnect_client(client_socket)
                 self._print_statistics(winner_name)
                 self.client_answers = {}
             except Exception as e:
