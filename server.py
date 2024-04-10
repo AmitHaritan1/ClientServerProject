@@ -13,6 +13,7 @@ class Server:
         self.server_name = "The best trivia server ever"
         self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.offer_message = ''
+
         self.ip_address = socket.gethostbyname(socket.gethostname())
         # Global variables
         self.clients = {}
@@ -118,7 +119,7 @@ class Server:
 
 
     # Function to handle UDP broadcast
-    def send_offer(self):
+    def _send_offer(self):
         self.offer_message = (self.MAGIC_COOKIE + b'\x02' + self.server_name.ljust(32).encode('utf-8') +
                               self.tcp_port.to_bytes(2, byteorder='big'))
         udp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -132,20 +133,20 @@ class Server:
         self.game_mode = True
         udp_server_socket.close()
 
-    def handle_tcp_connection(self):
+    def _handle_tcp_connection(self):
         while not self.game_mode:
             try:
                 client_socket, client_address = self.tcp_server_socket.accept()
                 self.last_client_join_time = time.time()
                 client_socket.setblocking(False)
                 print(f"Connection established with client: {client_address}")
-                threading.Thread(target=self.handle_client, args=(client_socket,)).start()
+                threading.Thread(target=self._handle_client, args=(client_socket,)).start()
             except socket.error as e:
                 time.sleep(1)
         # TODO: think what do we want to do with clients connecting to the server once the game started
 
     # Function to handle individual client
-    def handle_client(self, client_socket):
+    def _handle_client(self, client_socket):
         try:
             player_name = client_socket.recv(1024).decode('utf-8').strip()
             print(f"Player {player_name} connected.")
@@ -157,7 +158,7 @@ class Server:
         except Exception as e:
             print(f"Error handling client: {e}")
 
-    def next_question(self):
+    def _next_question(self):
         if self.current_question_index < len(self.trivia_questions):
             question, answer = self.trivia_questions[self.current_question_index]
             self.current_question_index += 1
@@ -169,13 +170,13 @@ class Server:
         else: # No more questions available
             shuffle(self.trivia_questions)
             self.current_question_index = 0
-            return self.next_question()
+            return self._next_question()
 
-    def start_timer(self, start_time):
+    def _start_timer(self, start_time):
         while time.time() - start_time < 10 and len(self.client_answers) < len(self.clients):
             time.sleep(1)
 
-    def print_round(self, game_round):
+    def _print_round(self, game_round):
         names = list(self.clients.values())
         if len(names) > 1:
             result = ', '.join(names[:-1]) + ' and ' + names[-1]
@@ -183,7 +184,7 @@ class Server:
             result = names[0]
         print(f"Round {game_round}, played by {result}:")
 
-    def send_to_all_clients(self, message):
+    def _send_to_all_clients(self, message):
         client_sockets = list(self.clients.keys())
         for client_socket in client_sockets:
             try:
@@ -195,7 +196,7 @@ class Server:
                 #print(f"Error while sending info to client {player_name}: {e}")
                 print(f"Error while sending info to client: {e}")
 
-    def welcome_message(self):
+    def _welcome_message(self):
         welcome = f"Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions!"
         client_names = list(self.clients.values())
         client_sockets = list(self.clients.keys())
@@ -203,7 +204,7 @@ class Server:
             if client_socket in self.clients.keys():
                 welcome += f"\nPlayer {i+1}: {name}"
         print(welcome)
-        self.send_to_all_clients(welcome)
+        self._send_to_all_clients(welcome)
         end = "="*30
         print(end)
         for (client_name, client_socket) in zip(client_names, client_sockets):
@@ -214,25 +215,26 @@ class Server:
                 self._disconnect_client(client_socket)
             except Exception as e:
                 print(f"Error while sending welcome to client {client_name}: {e}")
-        self.send_to_all_clients(end)
+        self._send_to_all_clients(end)
+
 
     def _disconnect_client(self, client_socket):
         del self.clients[client_socket]
         client_socket.close()
 
     # Function to start the game
-    def start_game(self):
-        self.welcome_message()
+    def _start_game(self):
+        self._welcome_message()
         shuffle(self.trivia_questions)
         game_round = 0
         while self.clients:
-            question, correct_answer = self.next_question()
+            question, correct_answer = self._next_question()
             game_round += 1
-            self.print_round(game_round)
+            self._print_round(game_round)
             question = f"True or False: {question}"
             print(question)
             try:
-                self.send_to_all_clients(question)
+                self._send_to_all_clients(question)
                 time.sleep(10)
                 for client_socket in self.clients.keys():
                     try:
@@ -283,11 +285,11 @@ class Server:
                 if len(correct_clients) == 1:  # if we found our winner
                     winner_name = self.clients[correct_clients[0]]
                     print(f"{winner_name} wins!")
-                    self.send_to_all_clients(f"{winner_name} wins!")
+                    self._send_to_all_clients(f"{winner_name} wins!")
                     print("Game over!")
-                    self.send_to_all_clients("Game over!")
+                    self._send_to_all_clients("Game over!")
                     print(f"Congratulations to the winner: {winner_name}")
-                    self.send_to_all_clients(f"Congratulations to the winner: {winner_name}")
+                    self._send_to_all_clients(f"Congratulations to the winner: {winner_name}")
                     print("Game over, sending out offer requests...")
                     looseres = list(self.clients.keys())
                 elif len(correct_clients) > 1 and len(correct_clients) != len(self.clients):
@@ -314,7 +316,7 @@ class Server:
 
 
     # Function to receive answer from a client
-    def receive_answer(self, question, client_socket):
+    def _receive_answer(self, question, client_socket):
         answer = client_socket.recv(1024).decode('utf-8').strip()
         while answer not in ['Y','T','N','F',0,1]:
             client_socket.sendall(self.invalid_answer_message.encode('utf-8'))
@@ -331,13 +333,13 @@ class Server:
             self.tcp_port = self.tcp_server_socket.getsockname()[1]
             self.tcp_server_socket.setblocking(False)  # Set non-blocking mode
             self.tcp_server_socket.listen()
-            tcp_thread = threading.Thread(target=self.handle_tcp_connection)
+            tcp_thread = threading.Thread(target=self._handle_tcp_connection)
             tcp_thread.start()
-            udp_thread = threading.Thread(target=self.send_offer)
+            udp_thread = threading.Thread(target=self._send_offer)
             udp_thread.start()
             udp_thread.join()
             tcp_thread.join()
-            self.start_game()
+            self._start_game()
 
 
 
