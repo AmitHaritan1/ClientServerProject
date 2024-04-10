@@ -77,16 +77,20 @@ class Player:
             try:
                 message = self.tcp_client_socket.recv(1024).decode('utf-8')
                 if not message:
-                    print("Server disconnected, listening for offer requests...")
-                    self.tcp_client_socket.close()
-                    self.state = STATE_LOOKING_FOR_SERVER
                     break
                 else:
                     print(message)
+            except ConnectionResetError as e:
+                break
+
             except Exception as e:
                 print("Error while getting message from the server:", e)
-                # Close the TCP socket
-                #self.tcp_client_socket.close()
+                break
+
+        # Close the TCP socket
+        print("Server disconnected, listening for offer requests...")
+        self.tcp_client_socket.close()
+        self.state = STATE_LOOKING_FOR_SERVER
 
 
     # Function to handle state: Game mode
@@ -164,11 +168,11 @@ class Client(Player):
                 time.sleep(1)
 
     # Function to handle state: Game mode
-    def _game_mode(self):
-        print("Entering game mode...")
-        listen_thread = threading.Thread(target=self._get_messages_from_server)
-        listen_thread.start()
-        listen_thread.join()
+    # def _game_mode(self):
+    #     print("Entering game mode...")
+    #     listen_thread = threading.Thread(target=self._get_messages_from_server)
+    #     listen_thread.start()
+    #     listen_thread.join()
 
     # Main function to run the client
     def run_client(self):
