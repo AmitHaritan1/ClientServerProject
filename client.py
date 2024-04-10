@@ -91,7 +91,7 @@ class Player:
                     break
                 else:
                     print(message)
-            except ConnectionResetError as e:
+            except ConnectionError as e:
                 break
 
             except Exception as e:
