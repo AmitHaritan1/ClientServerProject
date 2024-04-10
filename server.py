@@ -226,9 +226,7 @@ class Server:
                 print(f"Error while sending info to client: {e}")
 
     def _welcome_message(self):
-        white_background_string = "\033[47m Hello, World! \033[0m"
-
-        welcome = f"🥳🥳🥳 Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions! 🥳🥳🎗️"
+        welcome = f"🥳🥳🥳 Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions! 🥳🥳🎗️\n"
         client_names = list(self.clients.values())
         client_sockets = list(self.clients.keys())
         for i, (name, client_socket) in enumerate(zip(client_names, client_sockets)):
@@ -240,19 +238,18 @@ class Server:
         client_sockets = list(self.clients.keys())
         for (client_name, client_socket) in zip(client_names, client_sockets):
             try:
-                message = "You are playing as " + PINK + client_name + RESET + ", good luck!"
+                message = "You are playing as " + PINK + client_name + RESET + ", good luck!\n"
                 client_socket.sendall(message.encode('utf-8'))
             except ConnectionError:
                 self._disconnect_client(client_socket)
-            except socket.error as e:
-                print('socket error') #TODO: delete
+            except socket.error as e_socket:
                 self._disconnect_client(client_socket)
             except Exception as e:
                 print(f"Error while sending welcome to client {client_name}: {e}")
         if self.clients:
             print(welcome)
             print(end)
-        self._send_to_all_clients(end)
+        self._send_to_all_clients(end + "\n")
 
     def _disconnect_client(self, client_socket):
         client_name = self.clients.pop(client_socket, None)
