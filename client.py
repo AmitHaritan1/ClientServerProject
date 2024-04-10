@@ -41,8 +41,25 @@ class Player:
         self.tcp_client_socket = None
         self.waiting_for_input = False
 
+    def _state_looking_for_server(self):
+        udp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        udp_client_socket.bind(self.udp_listen_address)
+        udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-
+        while True: #TODO: consider changing the condition or adding sleep
+            data, server_address = udp_client_socket.recvfrom(1024)
+            magic_cookie = data[:4]
+            message_type = data[4]
+            if magic_cookie == self.MAGIC_COOKIE and message_type == 2:
+                server_name = data[5:37].decode('utf-8').strip()
+                tcp_port = int.from_bytes(data[37:], byteorder='big')
+                print(f"Received offer from server \"{server_name}\" at address {server_address[0]}, attempting to connect...")
+                self.tcp_server_address = (server_address[0], tcp_port)
+                udp_client_socket.close()
+                self.tcp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                return STATE_CONNECTING_TO_SERVER
+            time.sleep(1)
 
     # Function to handle state: Connecting to a server
     def _state_connecting_to_server(self):
@@ -84,18 +101,7 @@ class Player:
 
 class Client(Player):
     def __init__(self):
-        print("Client started, listening for offer requests")
-        self.name = choice(entertaining_names) + '\n'  # randomly pick a name from the list
-        # Define server address and port for UDP
-        self.udp_listen_address = ('0.0.0.0', 13117)
-        self.tcp_server_address = None
-        # Define client states
-        self.state = STATE_LOOKING_FOR_SERVER
-        # Define TCP socket
-        self.MAGIC_COOKIE = 0xabcddcba.to_bytes(4, byteorder='big')
-        self.tcp_client_socket = None
-        self.waiting_for_input = False
-
+        super().__init__()
 
     # # Function to handle state: Looking for a server
     # def _state_looking_for_server(self):

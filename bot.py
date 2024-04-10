@@ -1,12 +1,12 @@
 from socket import socket
 
-from client import Client
+from client import Player
 import random
 
 from client import STATE_LOOKING_FOR_SERVER, STATE_CONNECTING_TO_SERVER, STATE_GAME_MODE
 
 
-class Bot(Client):
+class Bot(Player):
     def __init__(self):
         super().__init__()
         self.name = "BOT " + self.name
@@ -31,6 +31,13 @@ class Bot(Client):
                 # Close the TCP socket
                 # self.tcp_client_socket.close()
 
+    def send_ans(self):
+        try:
+            bot_answer = self._choose_answer()
+            self.tcp_client_socket.sendall(bot_answer.encode('utf-8'))
+        except Exception as e:
+            print("Error while sending random choice:", e)
+
     def run_bot(self):
         while True:  # TODO: CHANGE IT TO DIFFERENT CONDITION
             if self.state == STATE_LOOKING_FOR_SERVER:
@@ -40,12 +47,7 @@ class Bot(Client):
             elif self.state == STATE_GAME_MODE:
                 self._game_mode()
 
-    def send_ans(self):
-        try:
-            bot_answer = self._choose_answer()
-            self.tcp_client_socket.sendall(bot_answer.encode('utf-8'))
-        except Exception as e:
-            print("Error while sending random choice:", e)
+
 
 
 # Create an instance of the GameClient class and run the client

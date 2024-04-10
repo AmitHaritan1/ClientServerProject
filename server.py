@@ -14,16 +14,8 @@ class Server:
         self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.offer_message = ''
 
-        def wlan_ip():
-            result = subprocess.run('ipconfig', stdout=subprocess.PIPE, text=True).stdout.lower()
-            scan = 0
-            for i in result.split('\n'):
-                if 'wireless' in i:
-                    scan = 1
-                if scan:
-                    if 'ipv4' in i:
-                        return i.split(':')[1].strip()
-        self.ip_address = wlan_ip()
+
+        self.ip_address = socket.gethostbyname(socket.gethostname())
         # Global variables
         self.clients = {}
         self.last_client_join_time = 0
