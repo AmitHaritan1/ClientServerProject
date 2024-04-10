@@ -45,7 +45,7 @@ class Client:
 
 
     # Function to handle state: Looking for a server
-    def state_looking_for_server(self):
+    def _state_looking_for_server(self):
         udp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         udp_client_socket.bind(self.udp_listen_address)
@@ -67,7 +67,7 @@ class Client:
 
 
     # Function to handle state: Connecting to a server
-    def state_connecting_to_server(self):
+    def _state_connecting_to_server(self):
         try:
             self.tcp_client_socket.connect(self.tcp_server_address)
             self.tcp_client_socket.sendall(self.name.encode('utf-8'))
@@ -77,7 +77,7 @@ class Client:
             print("Failed to connect to server:", e)
             return STATE_LOOKING_FOR_SERVER
 
-    def get_messages_from_server(self):
+    def _get_messages_from_server(self):
         while True:
             try:
                 message = self.tcp_client_socket.recv(1024).decode('utf-8')
@@ -93,7 +93,7 @@ class Client:
                 # Close the TCP socket
                 #self.tcp_client_socket.close()
 
-    def get_user_input(self):
+    def _get_user_input(self):
         while True: #TODO: consider changing the condition
             if self.state == STATE_GAME_MODE:
                 try:
@@ -105,23 +105,23 @@ class Client:
                 time.sleep(1)
 
     # Function to handle state: Game mode
-    def game_mode(self):
+    def _game_mode(self):
         print("Entering game mode...")
-        listen_thread = threading.Thread(target=self.get_messages_from_server)
+        listen_thread = threading.Thread(target=self._get_messages_from_server)
         listen_thread.start()
         listen_thread.join()
 
     # Main function to run the client
     def run_client(self):
-        keyboard_thread = threading.Thread(target=self.get_user_input)
+        keyboard_thread = threading.Thread(target=self._get_user_input)
         keyboard_thread.start()
         while True:  # TODO: CHANGE IT TO DIFFERENT CONDITION
             if self.state == STATE_LOOKING_FOR_SERVER:
-                self.state = self.state_looking_for_server()
+                self.state = self._state_looking_for_server()
             elif self.state == STATE_CONNECTING_TO_SERVER:
-                self.state = self.state_connecting_to_server()
+                self.state = self._state_connecting_to_server()
             elif self.state == STATE_GAME_MODE:
-                self.game_mode()
+                self._game_mode()
 
 
 
