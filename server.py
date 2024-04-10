@@ -196,8 +196,8 @@ class Server:
             player_string = f"Player {i+1}: {name}"
             print(player_string)
             self.send_to_all_clients(player_string+"\n")
-        print("=====================================")
-        self.send_to_all_clients("=====================================\n")
+        print("==")
+        self.send_to_all_clients("==\n")
 
     # Function to start the game
     def start_game(self):
