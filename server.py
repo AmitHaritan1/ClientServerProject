@@ -179,7 +179,7 @@ class Server:
         else: # No more questions available
             shuffle(self.trivia_questions)
             self.current_question_index = 0
-            return self.next_question()
+            return self._next_question()
 
     def _start_timer(self, start_time):
         while time.time() - start_time < 10 and len(self.client_answers) < len(self.clients):
@@ -205,7 +205,7 @@ class Server:
         for i, name in enumerate(self.clients.values()):
             welcome += f"\nPlayer {i+1}: {name}"
         print(welcome)
-        self.send_to_all_clients(welcome)
+        self._send_to_all_clients(welcome)
         end = "="*30
         print(end)
         for client_socket, client_name in self.clients.items():
@@ -214,7 +214,7 @@ class Server:
                 client_socket.sendall(message.encode('utf-8'))
             except Exception as e:
                 print(f"Error while sending welcome to client {client_name}: {e}")
-        self.send_to_all_clients(end+'\n')
+        self._send_to_all_clients(end+'\n')
 
 
     # Function to start the game
