@@ -4,16 +4,40 @@ import threading
 import sys
 import select
 from random import random
+from random import choice
 import msvcrt
 
 
 STATE_LOOKING_FOR_SERVER = 0
 STATE_CONNECTING_TO_SERVER = 1
 STATE_GAME_MODE = 2
+entertaining_names = [
+    "Gal Gadot", "Bar Refaeli", "Natalie Portman", "Sacha Baron Cohen", "Yael Grobglas",
+    "Lior Raz", "Shiri Maimon", "Orphaned Land", "Ayelet Zurer", "Itay Tiran",
+    "Doron Ben-David", "Rotem Sela", "Odeya Rush", "Idan Raichel", "Yuval Dayan",
+    "Dana International", "Netta Barzilai", "Gad Elbaz", "Yael Naim", "Eyal Golan",
+    "Omer Adam", "Yehuda Poliker", "Shlomo Artzi", "Yotam Ottolenghi", "Yitzhak Rabin",
+    "Golda Meir", "Ben-Gurion", "Moshe Dayan", "Menachem Begin", "Shimon Peres",
+    "Yitzhak Shamir", "Meir Dagan", "Eliezer Ben-Yehuda", "Theodor Herzl", "David Ben-Gurion",
+    "Levi Eshkol", "Golda Meir", "Yitzhak Rabin", "Benjamin Netanyahu", "Reuven Rivlin",
+    "Ehud Barak", "Ariel Sharon", "Yitzhak Shamir", "Shimon Peres", "Ezer Weizman",
+    "Yigal Allon", "Moshe Sharett", "David Levy", "Yitzhak Mordechai", "Yisrael Katz",
+    "Danny Danon", "Tzipi Livni", "Naftali Bennett", "Avigdor Lieberman", "Shulamit Aloni",
+    "Gideon Sa'ar", "Amir Peretz", "Rafi Eitan", "Uri Ariel", "Natan Sharansky",
+    "Benny Begin", "Yair Lapid", "Tamar Zandberg", "Ayman Odeh", "Benny Gantz",
+    "Zehava Galon", "Avi Gabbay", "Yaakov Litzman", "Yuli Edelstein", "Ayman Odeh",
+    "Ahmed Tibi", "Aryeh Deri", "Moshe Ya'alon", "Bezalel Smotrich", "David Ben-Gurion",
+    "Yitzhak Rabin", "Menachem Begin", "Ariel Sharon", "Golda Meir", "Benjamin Netanyahu",
+    "Shimon Peres", "Moshe Dayan", "Yitzhak Shamir", "Reuven Rivlin", "Ehud Barak",
+    "Levi Eshkol", "David Levy", "Danny Danon", "Tzipi Livni", "Naftali Bennett",
+    "Avigdor Lieberman", "Yair Lapid", "Ayman Odeh", "Moshe Ya'alon", "Aryeh Deri"
+]
+
+
 class Client:
     def __init__(self):
         print("Client started, listening for offer requests")
-        self.name = 'Chovav'+'\n' #TODO: randomly pick names
+        self.name = choice(entertaining_names) + '\n'  # randomly pick a name from the list
         # Define server address and port for UDP
         self.udp_listen_address = ('0.0.0.0', 13117)
         self.tcp_server_address = None
