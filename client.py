@@ -21,7 +21,7 @@ entertaining_names = [
  'Yael Grobglas', 'Yotam Ottolenghi', 'David Ben-Gurion', 'Benjamin Netanyahu', 'Yuval Dayan',
  'Adva Dadon', 'Shulamit Aloni', 'Yuli Edelstein', 'Yitzhak Shamir', 'Levi Eshkol', 'Rafi Eitan',
  'Theodor Herzl', 'Benny Gantz', 'Moshe Sharett', 'Golda Meir', 'Ezer Weizman', 'Yehuda Poliker',
- 'Idan Raichel', 'David Levy', 'Bezalel Smotrich', 'Zehava Galon', 'Ayman Odeh', 'Odeya',
+ 'Idan Raichel', 'David Levy', 'Bezalel Smotrich', 'Zehava Galon', 'Odeya',
  'Sacha Baron Cohen', 'Yael Naim', 'Reuven Rivlin', 'Benny Begin', 'Ayelet Zurer', 'Ehud Barak',
  "Gideon Sa'ar", 'Avi Gabbay', 'Ariel Sharon', 'Shimon Peres', 'Danny Danon',
  'Uri Ariel', 'Eliezer Ben-Yehuda'

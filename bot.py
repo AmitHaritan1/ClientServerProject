@@ -12,7 +12,7 @@ class Bot(Player):
         self.name = "BOT " + self.name
 
     def _choose_answer(self):
-        return random.choice(["Y", "N"])
+        return random.choice(['Y', 'T', '1', 'N', 'F', '0'])
 
     def _get_messages_from_server(self):
         while True:
@@ -22,7 +22,7 @@ class Bot(Player):
                     break
                 else:
                     print(message)
-                    if message[:14] == 'True or False:': self.send_ans()
+                    if message.find('True or False:') >=0: self.send_ans()
 
             except ConnectionResetError as e:
                 break
