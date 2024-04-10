@@ -17,9 +17,16 @@ class Server:
         self.ip_address = socket.gethostbyname(socket.gethostname())
         # Global variables
         self.clients = {}
+        self.client_scores = {}
         self.last_client_join_time = 0
         self.game_mode = False
         self.client_answers = {}
+        self.legal_answers = ['Y', 'T', '1', 'N', 'F', '0']
+        self.answer_uses = {answer:0 for answer in self.legal_answers}
+        self.answer_uses['illegal'] = 0
+        self.answer_uses['no answer'] = 0
+        self.global_answer_uses = self.answer_uses
+        self.all_time_wins = {}
         # Define a list of yes or no questions and correct answers
         self.trivia_questions = [
             ("Is Paris the capital of France?", "Y"),
@@ -151,6 +158,7 @@ class Server:
             player_name = client_socket.recv(1024).decode('utf-8').strip()
             print(f"Player {player_name} connected.")
             self.clients[client_socket]=player_name
+            self.client_scores[player_name] = 0
             # Implement game logic here
             # TODO: make sure that someone starts the game
             # TODO: make sure to close the client socket when the game is over
@@ -224,6 +232,7 @@ class Server:
 
     # Function to start the game
     def _start_game(self):
+        self.answer_uses = {answer:0 for answer in self.answer_uses.keys()}
         self._welcome_message()
         shuffle(self.trivia_questions)
         game_round = 0
@@ -263,14 +272,20 @@ class Server:
                         disconnected_during_run.append(client_socket)
                         continue
                     feedback = True if answer in correct_answer else False
+                    if answer in self.legal_answers:
+                        self.answer_uses[answer] += 1
                     if feedback:
                         client_message = "You are correct!"
                         server_message = f"{player_name} is correct!"
+                        self.client_scores[player_name] += 1
                     else:
                         if answer is None:
                             client_message = "You did not answer in time!"
+                            self.answer_uses['no answer'] += 1
                         else:
                             client_message = "You are incorrect!"
+                            if answer not in self.legal_answers:
+                                self.answer_uses['illegal'] += 1
                         server_message = f"{player_name} is incorrect!"
                     try:
                         client_socket.sendall(client_message.encode('utf-8'))
@@ -281,26 +296,40 @@ class Server:
 
                 # If not all clients answered the wrong question - remove all the clients that answered wrong
                 correct_clients = [client_socket for client_socket, answer in self.client_answers.items() if (client_socket not in disconnected_during_run and answer in correct_answer)]
-                looseres = []
+                losers = []
                 if len(correct_clients) == 1:  # if we found our winner
                     winner_name = self.clients[correct_clients[0]]
                     print(f"{winner_name} wins!")
                     self._send_to_all_clients(f"{winner_name} wins!")
                     print("Game over!")
+
+                    # statistics:
+                    print("Scores:")
+                    for client in self.clients.keys():
+                        print(str(self.clients[client])+" : " + str(self.client_scores[self.clients[client]]) + " points")
+                    print("most common answer in this game: " + max(self.answer_uses, key=self.answer_uses.get))
+                    self.global_answer_uses = {key: self.global_answer_uses[key] + self.answer_uses[key] for key in self.global_answer_uses.keys()}
+                    print("most common answer in all games: " + max(self.global_answer_uses, key=self.global_answer_uses.get))
+                    if winner_name in self.all_time_wins.keys():
+                        self.all_time_wins[winner_name] += 1
+                    else:
+                        self.all_time_wins[winner_name] = 1
+                    print("All time wins: " + max(self.all_time_wins, key=self.all_time_wins.get) + " with " + str(self.all_time_wins[max(self.all_time_wins, key=self.all_time_wins.get)]) + " wins")
+
                     self._send_to_all_clients("Game over!")
-                    print(f"Congratulations to the winner: {winner_name}")
-                    self._send_to_all_clients(f"Congratulations to the winner: {winner_name}")
+                    print(f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points!")
+                    self._send_to_all_clients(f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points!")
                     print("Game over, sending out offer requests...")
-                    looseres = list(self.clients.keys())
+                    losers = list(self.clients.keys())
                 elif len(correct_clients) > 1 and len(correct_clients) != len(self.clients):
                     for client_socket, answer in self.client_answers.items():
                         if (client_socket not in disconnected_during_run and answer not in correct_answer):
                             try:
-                                client_socket.sendall("You lost - Game over!".encode('utf-8'))
-                                looseres.append(client_socket)
+                                client_socket.sendall(f"You lost - Game over! Congrats on {self.client_scores[self.clients[client_socket]]} points".encode('utf-8'))
+                                losers.append(client_socket)
                             except Exception as a:
                                 self._disconnect_client(client_socket)
-                for client_socket in looseres:
+                for client_socket in losers:
                     self._disconnect_client(client_socket)
                 self.client_answers = {}
             except Exception as e:
