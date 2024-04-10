@@ -345,23 +345,10 @@ class Server:
                     print(f"{winner_name} wins! 🏆")
                     self._send_to_all_clients(f"{winner_name} wins! 🏆")
                     print("Game over!")
-
-                    # statistics:
-                    print("Scores:")
-                    for client in self.clients.keys():
-                        print(str(self.clients[client])+" : " + str(self.client_scores[self.clients[client]]) + " points")
-                    print("most common answer in this game: " + max(self.answer_uses, key=self.answer_uses.get))
-                    self.global_answer_uses = {key: self.global_answer_uses[key] + self.answer_uses[key] for key in self.global_answer_uses.keys()}
-                    print("most common answer in all games: " + max(self.global_answer_uses, key=self.global_answer_uses.get))
-                    if winner_name in self.all_time_wins.keys():
-                        self.all_time_wins[winner_name] += 1
-                    else:
-                        self.all_time_wins[winner_name] = 1
-                    print("All time wins: " + max(self.all_time_wins, key=self.all_time_wins.get) + " with " + str(self.all_time_wins[max(self.all_time_wins, key=self.all_time_wins.get)]) + " wins")
-                    self._send_to_all_clients("Game over!")
                     print(f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points! 🎮🎉")
                     self._send_to_all_clients(CYAN + f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points!" + RESET)
-                    print("Game over, sending out offer requests...")
+                    self._send_to_all_clients("Game over!")
+
                     losers = list(self.clients.keys())
                 elif len(correct_clients) > 1 and len(correct_clients) != len(self.clients):
                     for client_socket, answer in zip(client_sockets, client_answers):
@@ -378,18 +365,39 @@ class Server:
                 if len(losers) != len(self.clients):
                     for client_socket in losers:
                         self._disconnect_client(client_socket)
+                self._print_statistics(winner_name)
                 self.client_answers = {}
             except Exception as e:
                 print(f"Error handling game logic: {e}")
                 for client_socket in self.clients.keys():
                     self._disconnect_client(client_socket)
                 break
+
         self.tcp_server_socket.close()
         self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.tcp_port = 0
         self.client_answers = {}
         self.game_mode = False
         self.current_question_index = 0
+
+    def _print_statistics(self, winner_name):
+        # statistics:
+        print()
+        print(UNDERLINE + BOLD + "Game Statistics:" + RESET)
+        for client in self.clients.keys():
+            print(str(self.clients[client]) + " : " + str(self.client_scores[self.clients[client]]) + " points")
+        print("most common answer in this game: " + max(self.answer_uses, key=self.answer_uses.get))
+        self.global_answer_uses = {key: self.global_answer_uses[key] + self.answer_uses[key] for key in
+                                   self.global_answer_uses.keys()}
+        print("most common answer in all games: " + max(self.global_answer_uses, key=self.global_answer_uses.get))
+        if winner_name in self.all_time_wins.keys():
+            self.all_time_wins[winner_name] += 1
+        else:
+            self.all_time_wins[winner_name] = 1
+        print("All time wins: " + max(self.all_time_wins, key=self.all_time_wins.get) + " with " + str(
+            self.all_time_wins[max(self.all_time_wins, key=self.all_time_wins.get)]) + " wins")
+        print(BOLD + "Game over, sending out offer requests..." + RESET)
+        print()
 
     # Function to receive answer from a client
     def _receive_answer(self, question, client_socket):
