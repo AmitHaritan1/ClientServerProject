@@ -226,7 +226,7 @@ class Server:
                 print(f"Error while sending info to client: {e}")
 
     def _welcome_message(self):
-        welcome = f"🥳🥳🥳 Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions! 🥳🥳🎗️\n"
+        welcome = CYAN + f"🥳🥳🥳 Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions! 🥳🥳🎗️\n" + RESET
         client_names = list(self.clients.values())
         client_sockets = list(self.clients.keys())
         for i, (name, client_socket) in enumerate(zip(client_names, client_sockets)):
@@ -321,7 +321,7 @@ class Server:
                         if answer is None:
                             client_message = RED + "You did not answer in time!" + RESET
                         elif answer not in self.legal_answers:
-                            client_message = self.invalid_answer_message
+                            client_message = RED + self.invalid_answer_message + RESET
                             self.answer_uses['illegal'] += 1
                         else:
                             client_message = RED + "You are incorrect!" + RESET
@@ -344,7 +344,7 @@ class Server:
                     self._send_to_all_clients(f"{winner_name} wins! 🏆")
                     print("Game over!")
                     print(f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points! 🎮🎉")
-                    self._send_to_all_clients(CYAN + f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points!" + RESET)
+                    self._send_to_all_clients(YELLOW + f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points!\n" + RESET)
                     self._send_to_all_clients("Game over!")
 
                 elif len(correct_clients) > 1 and len(correct_clients) != len(self.clients):
