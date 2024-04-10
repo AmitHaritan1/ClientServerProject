@@ -13,17 +13,7 @@ class Server:
         self.server_name = "The best trivia server ever"
         self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.offer_message = ''
-
-        def wlan_ip():
-            result = subprocess.run('ipconfig', stdout=subprocess.PIPE, text=True).stdout.lower()
-            scan = 0
-            for i in result.split('\n'):
-                if 'wireless' in i:
-                    scan = 1
-                if scan:
-                    if 'ipv4' in i:
-                        return i.split(':')[1].strip()
-        self.ip_address = wlan_ip()
+        self.ip_address = socket.gethostbyname(socket.gethostname())
         # Global variables
         self.clients = {}
         self.last_client_join_time = 0
@@ -172,9 +162,9 @@ class Server:
             question, answer = self.trivia_questions[self.current_question_index]
             self.current_question_index += 1
             if answer == 'Y':
-                correct_answer = ['Y', 'T', 1]
+                correct_answer = ['Y', 'T', '1']
             else:
-                correct_answer = ['N', 'F', 0]
+                correct_answer = ['N', 'F', '0']
             return question, correct_answer
         else: # No more questions available
             shuffle(self.trivia_questions)
@@ -194,29 +184,41 @@ class Server:
         print(f"Round {game_round}, played by {result}:")
 
     def send_to_all_clients(self, message):
-        for client_socket in self.clients.keys():
+        client_sockets = list(self.clients.keys())
+        for client_socket in client_sockets:
             try:
                 client_socket.sendall(message.encode('utf-8'))
+            except ConnectionResetError:
+                self._disconnect_client(client_socket)
             except Exception as e:
-                player_name = self.clients[client_socket]
-                print(f"Error while sending info to client {player_name}: {e}")
+                #player_name = self.clients[client_socket]
+                #print(f"Error while sending info to client {player_name}: {e}")
+                print(f"Error while sending info to client: {e}")
 
     def welcome_message(self):
         welcome = f"Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions!"
-        for i, name in enumerate(self.clients.values()):
-            welcome += f"\nPlayer {i+1}: {name}"
+        client_names = list(self.clients.values())
+        client_sockets = list(self.clients.keys())
+        for i, (name, client_socket) in enumerate(zip(client_names, client_sockets)):
+            if client_socket in self.clients.keys():
+                welcome += f"\nPlayer {i+1}: {name}"
         print(welcome)
         self.send_to_all_clients(welcome)
         end = "="*30
         print(end)
-        for client_socket, client_name in self.clients.items():
+        for (client_name, client_socket) in zip(client_names, client_sockets):
             try:
-                message = "You are playing as " + client_name + ", good luck!\n"
+                message = "You are playing as " + client_name + ", good luck!"
                 client_socket.sendall(message.encode('utf-8'))
+            except ConnectionResetError:
+                self._disconnect_client(client_socket)
             except Exception as e:
                 print(f"Error while sending welcome to client {client_name}: {e}")
-        self.send_to_all_clients(end+'\n')
+        self.send_to_all_clients(end)
 
+    def _disconnect_client(self, client_socket):
+        del self.clients[client_socket]
+        client_socket.close()
 
     # Function to start the game
     def start_game(self):
@@ -231,60 +233,76 @@ class Server:
             print(question)
             try:
                 self.send_to_all_clients(question)
-                # answer_threads = []
-                # for client_socket in self.clients.keys():
-                #     answer_thread = threading.Thread(target=self.receive_answer, args=(question, client_socket,))
-                #     answer_threads.append(answer_thread)
-                #     answer_thread.start()
-                # Start a timer for 10 seconds
-                # timer_thread = threading.Thread(target=self.start_timer, args=(time.time(),))
-                # timer_thread.start()
-                # timer_thread.join()
                 time.sleep(10)
                 for client_socket in self.clients.keys():
                     try:
                         answer = client_socket.recv(1024).decode('utf-8').strip()
-                        self.client_answers[client_socket] = answer
+                        if not answer:
+                            self._disconnect_client(client_socket)
+                            if not self.clients:
+                                print("All players quit, Game over! sending out offer requests...")
+                                break
+                        else:
+                            self.client_answers[client_socket] = answer
                     except socket.error as e:
                         # no answer from client
-                        print(e)
-                        self.client_answers[client_socket] = 'Z'
+                        self.client_answers[client_socket] = None
+                    except ConnectionError as e:
+                        # client disconnected
+                        self._disconnect_client(client_socket)
+                        if not self.clients:
+                            print("All players quit, Game over! sending out offer requests...")
+                            break
+                disconnected_during_run = []
                 for client_socket, answer in self.client_answers.items():
-                    player_name = self.clients[client_socket]
+                    try:
+                        player_name = self.clients[client_socket]
+                    except Exception as a:
+                        disconnected_during_run.append(client_socket)
+                        continue
                     feedback = True if answer in correct_answer else False
                     if feedback:
                         client_message = "You are correct!"
                         server_message = f"{player_name} is correct!"
                     else:
-                        client_message= "You are incorrect!"
+                        if answer is None:
+                            client_message = "You did not answer in time!"
+                        else:
+                            client_message = "You are incorrect!"
                         server_message = f"{player_name} is incorrect!"
-                    client_socket.sendall(client_message.encode('utf-8'))
+                    try:
+                        client_socket.sendall(client_message.encode('utf-8'))
+                    except Exception as a:
+                        disconnected_during_run.append(client_socket)
+                        continue
                     print(server_message)
 
                 # If not all clients answered the wrong question - remove all the clients that answered wrong
-                correct_clients = [client_socket for client_socket, answer in self.client_answers.items() if answer in correct_answer]
+                correct_clients = [client_socket for client_socket, answer in self.client_answers.items() if (client_socket not in disconnected_during_run and answer in correct_answer)]
                 looseres = []
                 if len(correct_clients) == 1:  # if we found our winner
                     winner_name = self.clients[correct_clients[0]]
                     print(f"{winner_name} wins!")
-                    self.send_to_all_clients(f"{winner_name} wins!\n")
+                    self.send_to_all_clients(f"{winner_name} wins!")
                     print("Game over!")
-                    self.send_to_all_clients("Game over!\n")
+                    self.send_to_all_clients("Game over!")
                     print(f"Congratulations to the winner: {winner_name}")
-                    self.send_to_all_clients(f"Congratulations to the winner: {winner_name}\n")
+                    self.send_to_all_clients(f"Congratulations to the winner: {winner_name}")
                     print("Game over, sending out offer requests...")
                     looseres = list(self.clients.keys())
                 elif len(correct_clients) > 1 and len(correct_clients) != len(self.clients):
                     for client_socket, answer in self.client_answers.items():
-                        if answer not in correct_answer:
-                            client_socket.sendall("You lost - Game over!".encode('utf-8'))
-                            looseres.append(client_socket)
+                        if (client_socket not in disconnected_during_run and answer not in correct_answer):
+                            try:
+                                client_socket.sendall("You lost - Game over!".encode('utf-8'))
+                                looseres.append(client_socket)
+                            except Exception as a:
+                                self._disconnect_client(client_socket)
                 for client_socket in looseres:
-                    del self.clients[client_socket]
-                    client_socket.close()
+                    self._disconnect_client(client_socket)
                 self.client_answers = {}
             except Exception as e:
-                #print(e.with_traceback())
+                print(e.with_traceback())
                 print(f"Error handling game logic: {e}")
                 #break
         self.tcp_server_socket.close()
