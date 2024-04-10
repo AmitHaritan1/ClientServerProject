@@ -8,7 +8,7 @@ from client import STATE_LOOKING_FOR_SERVER, STATE_CONNECTING_TO_SERVER, STATE_G
 class Bot(Client):
     def __init__(self):
         super().__init__()
-        self.name = "amit" + "_Bot"
+        self.name = "BOT " + self.name
 
     def choose_answer(self):
         return random.choice(["Y", "N"])
@@ -43,7 +43,6 @@ class Bot(Client):
         while True:
             try:
                 message = self.tcp_client_socket.recv(1024).decode('utf-8')
-                self.send_ans()
                 if not message:
                     print("Server disconnected, listening for offer requests...")
                     self.tcp_client_socket.close()
@@ -51,6 +50,7 @@ class Bot(Client):
                     break
                 else:
                     print(message)
+                    if message[:14]== 'True or False:': self.send_ans()
             except Exception as e:
                 print("Error while getting message from the server:", e)
                 # Close the TCP socket
