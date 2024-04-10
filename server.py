@@ -5,6 +5,22 @@ from random import shuffle
 import subprocess
 
 
+# ANSI color codes
+RED = '\033[91m'
+GREEN = '\033[92m'
+YELLOW = '\033[93m'
+BLUE = '\033[94m'
+MAGENTA = '\033[95m'
+CYAN = '\033[96m'
+RESET = '\033[0m'
+PINK = '\033[95m'
+
+
+# ANSI text style codes
+BOLD = '\033[1m'
+UNDERLINE = '\033[4m'
+ITALIC = '\033[3m'
+
 class Server:
     def __init__(self):
         self.udp_port = 13117
@@ -197,7 +213,9 @@ class Server:
                 print(f"Error while sending info to client: {e}")
 
     def _welcome_message(self):
-        welcome = f"Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions!"
+        white_background_string = "\033[47m Hello, World! \033[0m"
+
+        welcome = f"🥳🥳🥳 Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions! 🥳🥳🎗️"
         client_names = list(self.clients.values())
         client_sockets = list(self.clients.keys())
         for i, (name, client_socket) in enumerate(zip(client_names, client_sockets)):
@@ -209,7 +227,7 @@ class Server:
         client_sockets = list(self.clients.keys())
         for (client_name, client_socket) in zip(client_names, client_sockets):
             try:
-                message = "You are playing as " + client_name + ", good luck!"
+                message = "You are playing as " + PINK + client_name + RESET + ", good luck!"
                 client_socket.sendall(message.encode('utf-8'))
             except ConnectionError:
                 self._disconnect_client(client_socket)
@@ -241,7 +259,7 @@ class Server:
             question, correct_answer = self._next_question()
             game_round += 1
             self._print_round(game_round)
-            question = f"True or False: {question}"
+            question = f"True or False: " + BOLD + f"{question}" + RESET
             print(question)
             try:
                 self._send_to_all_clients(question)
@@ -280,16 +298,16 @@ class Server:
                         continue
                     feedback = True if answer in correct_answer else False
                     if feedback:
-                        client_message = "You are correct!"
-                        server_message = f"{player_name} is correct!"
+                        client_message = GREEN + "You are correct!" + RESET
+                        server_message = GREEN + f"{player_name} is correct!" + RESET
                     else:
                         if answer is None:
-                            client_message = "You did not answer in time!"
+                            client_message = YELLOW + "You did not answer in time!" + RESET
                         elif answer not in ['Y', 'N', 'T', 'F', '1', '0']:
                             client_message = self.invalid_answer_message
                         else:
-                            client_message = "You are incorrect!"
-                        server_message = f"{player_name} is incorrect!"
+                            client_message = RED + "You are incorrect!" + RESET
+                        server_message = RED + f"{player_name} is incorrect!" + RESET
                     try:
                         client_socket.sendall(client_message.encode('utf-8'))
                     except ConnectionError:
@@ -306,19 +324,19 @@ class Server:
                 losers = []
                 if len(correct_clients) == 1:  # if we found our winner
                     winner_name = self.clients.get(correct_clients[0], "disconnected winner")
-                    print(f"{winner_name} wins!")
-                    self._send_to_all_clients(f"{winner_name} wins!")
+                    print(f"{winner_name} wins! 🏆")
+                    self._send_to_all_clients(f"{winner_name} wins! 🏆")
                     print("Game over!")
                     self._send_to_all_clients("Game over!")
-                    print(f"Congratulations to the winner: {winner_name}")
-                    self._send_to_all_clients(f"Congratulations to the winner: {winner_name}")
+                    print(f"Congratulations to the winner: {winner_name} 🎮🎉")
+                    self._send_to_all_clients(CYAN + f"Congratulations to the winner: {winner_name}" + RESET)
                     print("Game over, sending out offer requests...")
                     losers = list(self.clients.keys())
                 elif len(correct_clients) > 1 and len(correct_clients) != len(self.clients):
                     for client_socket, answer in zip(client_sockets, client_answers):
                         if answer not in correct_answer:
                             try:
-                                client_socket.sendall("You lost - Game over!".encode('utf-8'))
+                                client_socket.sendall("You lost - Game over! 👎".encode('utf-8'))
                                 losers.append(client_socket)
                             except ConnectionError:
                                 if self._disconnect_client(client_socket) == 0:
