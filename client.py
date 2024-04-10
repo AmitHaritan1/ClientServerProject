@@ -63,10 +63,7 @@ class Client:
             if magic_cookie == self.MAGIC_COOKIE and message_type == 2:
                 server_name = data[5:37].decode('utf-8').strip()
                 tcp_port = int.from_bytes(data[37:], byteorder='big')
-                print("Received offer from server:", server_name)
-                print("Server IP address:", server_address[0])
-                print("TCP port:", tcp_port)
-                print("Attempting to connect...")
+                print(f"Received offer from server \"{server_name}\" at address {server_address[0]}, attempting to connect...")
                 self.tcp_server_address = (server_address[0], tcp_port)
                 udp_client_socket.close()
                 self.tcp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

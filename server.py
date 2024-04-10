@@ -2,6 +2,8 @@ import socket
 import threading
 import time
 from random import shuffle
+import subprocess
+
 
 class Server:
     def __init__(self):
@@ -11,7 +13,17 @@ class Server:
         self.server_name = "The best trivia server ever"
         self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.offer_message = ''
-        self.ip_address=socket.gethostbyname(socket.gethostname())
+
+        def wlan_ip():
+            result = subprocess.run('ipconfig', stdout=subprocess.PIPE, text=True).stdout.lower()
+            scan = 0
+            for i in result.split('\n'):
+                if 'wireless' in i:
+                    scan = 1
+                if scan:
+                    if 'ipv4' in i:
+                        return i.split(':')[1].strip()
+        self.ip_address = wlan_ip()
         # Global variables
         self.clients = {}
         self.last_client_join_time = 0
@@ -188,16 +200,23 @@ class Server:
             except Exception as e:
                 player_name = self.clients[client_socket]
                 print(f"Error while sending info to client {player_name}: {e}")
+
     def welcome_message(self):
         welcome = f"Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions!"
+        for i, name in enumerate(self.clients.values()):
+            welcome += f"\nPlayer {i+1}: {name}"
         print(welcome)
         self.send_to_all_clients(welcome)
-        for i, name in enumerate(self.clients.values()):
-            player_string = f"Player {i+1}: {name}"
-            print(player_string)
-            self.send_to_all_clients(player_string+"\n")
-        print("=====================================")
-        self.send_to_all_clients("=====================================\n")
+        end = "="*30
+        print(end)
+        for client_socket, client_name in self.clients.items():
+            try:
+                message = "You are playing as " + client_name + ", good luck!\n"
+                client_socket.sendall(message.encode('utf-8'))
+            except Exception as e:
+                print(f"Error while sending welcome to client {client_name}: {e}")
+        self.send_to_all_clients(end+'\n')
+
 
     # Function to start the game
     def start_game(self):
@@ -265,6 +284,7 @@ class Server:
                     client_socket.close()
                 self.client_answers = {}
             except Exception as e:
+                #print(e.with_traceback())
                 print(f"Error handling game logic: {e}")
                 #break
         self.tcp_server_socket.close()
