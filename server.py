@@ -46,6 +46,8 @@ class Server:
         self.all_time_wins = {}
         # Define a list of yes or no questions and correct answers
         self.trivia_questions = [
+            ("Is UDP the capital of Israel?", "N"),
+            ("Is this sent from my POTATO?", "Y"),
             ("Is Paris the capital of France?", "Y"),
             ("Is Jupiter the largest planet in our solar system?", "Y"),
             ("Is the chemical symbol for water H2O?", "Y"),
@@ -226,7 +228,7 @@ class Server:
                 print(f"Error while sending info to client: {e}")
 
     def _welcome_message(self):
-        welcome = CYAN + f"🥳🥳🥳 Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions! 🥳🥳🎗️\n" + RESET
+        welcome = CYAN + f"🥳🥳 Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions! 🥳🎗️\n" + RESET
         client_names = list(self.clients.values())
         client_sockets = list(self.clients.keys())
         for i, (name, client_socket) in enumerate(zip(client_names, client_sockets)):
@@ -344,7 +346,7 @@ class Server:
                     self._send_to_all_clients(f"{winner_name} wins! 🏆")
                     print("Game over!")
                     print(f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points! 🎮🎉")
-                    self._send_to_all_clients(YELLOW + f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points!\n" + RESET)
+                    self._send_to_all_clients(YELLOW + f"\nCongratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points!\n" + RESET)
                     self._send_to_all_clients("Game over!")
 
                 elif len(correct_clients) > 1 and len(correct_clients) != len(self.clients):
@@ -352,7 +354,6 @@ class Server:
                         if answer not in correct_answer:
                             try:
                                 client_socket.sendall(f"You lost - Game over! 👎 \n In this game you earned {self.client_scores[self.clients[client_socket]]} points".encode('utf-8'))
-                                losers.append(client_socket)
                             except ConnectionError:
                                 if self._disconnect_client(client_socket) == 0:
                                     print("All players quit, Game over! sending out offer requests...")

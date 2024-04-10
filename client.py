@@ -106,7 +106,7 @@ class Player:
 
     # Function to handle state: Game mode
     def _game_mode(self):
-        print("Entering game mode...")
+        print("Entering game mode...\n")
         listen_thread = threading.Thread(target=self._get_messages_from_server)
         listen_thread.start()
         listen_thread.join()
