@@ -249,10 +249,9 @@ class Server:
                 self._disconnect_client(client_socket)
             except Exception as e:
                 print(f"Error while sending welcome to client {client_name}: {e}")
-            finally:
-                if self.clients:
-                    print(welcome)
-                    print(end)
+        if self.clients:
+            print(welcome)
+            print(end)
         self._send_to_all_clients(end)
 
     def _disconnect_client(self, client_socket):
@@ -376,8 +375,9 @@ class Server:
                                     break
                             except Exception as a:
                                 self._disconnect_client(client_socket)
-                for client_socket in losers:
-                    self._disconnect_client(client_socket)
+                if len(losers) != len(self.clients):
+                    for client_socket in losers:
+                        self._disconnect_client(client_socket)
                 self.client_answers = {}
             except Exception as e:
                 print(f"Error handling game logic: {e}")
