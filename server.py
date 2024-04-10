@@ -2,10 +2,10 @@ import socket
 import threading
 import time
 from random import shuffle
-import subprocess
 
 
 # ANSI color codes
+# Defining ANSI color codes for better console output readability
 RED = '\033[91m'
 GREEN = '\033[92m'
 YELLOW = '\033[93m'
@@ -17,24 +17,25 @@ PINK = '\033[95m'
 
 
 # ANSI text style codes
+# Defining ANSI text style codes for better console output readability
 BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
 ITALIC = '\033[3m'
 
 class Server:
     def __init__(self):
-        self.udp_port = 13117
-        self.tcp_port = 0
-        self.MAGIC_COOKIE = 0xabcddcba.to_bytes(4, byteorder='big')
+        # Initialize server settings and variables
+        self.udp_port = 13117  # UDP port for broadcasting server offer message
+        self.tcp_port = 0  # TCP port for handling client connections
+        self.MAGIC_COOKIE = 0xabcddcba.to_bytes(4, byteorder='big')  # Magic cookie for server identification
         self.server_name = "The best trivia server ever"
         self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.offer_message = ''
-
         self.ip_address = socket.gethostbyname(socket.gethostname())
         # Global variables
-        self.clients = {}
-        self.last_client_join_time = 0
-        self.game_mode = False
+        self.clients = {}  # Dictionary to store connected clients
+        self.last_client_join_time = 0  # Timestamp for the last client connection
+        self.game_mode = False  # Flag indicating whether the game is in progress
         self.client_answers = {}
         # Define a list of yes or no questions and correct answers
         self.trivia_questions = [
@@ -136,6 +137,10 @@ class Server:
 
     # Function to handle UDP broadcast
     def _send_offer(self):
+        """
+        Function to send UDP broadcast message with server offer to clients.
+        This function runs in a separate thread.
+        """
         self.offer_message = (self.MAGIC_COOKIE + b'\x02' + self.server_name.ljust(32).encode('utf-8') +
                               self.tcp_port.to_bytes(2, byteorder='big'))
         udp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -285,6 +290,8 @@ class Server:
                     except Exception as e:
                         print(f"Error while getting answer from client: {e}")
                 client_sockets, client_answers = list(self.client_answers.keys()), list(self.client_answers.values())
+                correct_clients = []
+                losers = []
                 for (client_socket, answer) in zip(client_sockets, client_answers):
                     try:
                         player_name = self.clients.get(client_socket)
@@ -300,14 +307,16 @@ class Server:
                     if feedback:
                         client_message = GREEN + "You are correct!" + RESET
                         server_message = GREEN + f"{player_name} is correct!" + RESET
+                        correct_clients.append(client_socket)
                     else:
                         if answer is None:
-                            client_message = YELLOW + "You did not answer in time!" + RESET
+                            client_message = RED + "You did not answer in time!" + RESET
                         elif answer not in ['Y', 'N', 'T', 'F', '1', '0']:
                             client_message = self.invalid_answer_message
                         else:
                             client_message = RED + "You are incorrect!" + RESET
                         server_message = RED + f"{player_name} is incorrect!" + RESET
+                        losers.append(client_socket)
                     try:
                         client_socket.sendall(client_message.encode('utf-8'))
                     except ConnectionError:
@@ -316,12 +325,9 @@ class Server:
                             break
                     except Exception as a:
                         continue
-                    print(server_message)
+                    finally:
+                        print(server_message)
 
-                client_sockets, client_answers = list(self.client_answers.keys()), list(self.client_answers.values())
-                # If not all clients answered the wrong question - remove all the clients that answered wrong
-                correct_clients = [client_socket for (client_socket, answer) in zip( client_sockets, client_answers) if answer in correct_answer]
-                losers = []
                 if len(correct_clients) == 1:  # if we found our winner
                     winner_name = self.clients.get(correct_clients[0], "disconnected winner")
                     print(f"{winner_name} wins! 🏆")
