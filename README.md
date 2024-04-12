@@ -1,7 +1,3 @@
-Here's a README file for your project:
-
----
-
 # Trivia Game Server and Client 🎗️
 
 ## Overview
