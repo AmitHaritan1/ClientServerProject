@@ -2,6 +2,7 @@ import socket
 import threading
 import time
 from random import shuffle
+from random import choice
 
 
 # ANSI color codes
@@ -22,13 +23,32 @@ BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
 ITALIC = '\033[3m'
 
+# List of possible server names
+SERVER_NAMES = [
+            "IntellectIQ Trivia",
+            "Brainy Banter Barracks",
+            "Witty Wisdom Wharf",
+            "Quirky Quiz Quarters",
+            "Cogito Clubhouse",
+            "SmartyPants Society",
+            "Whizbang Wits Workshop",
+            "Riddle Realm Retreat",
+            "Brainiac Buzz Brigade",
+            "Clever Conundrum Cove",
+            "Brainbox Buffet",
+            "Puzzle Palace",
+            "Trivia Trove",
+            "Noggin Nook",
+            "Clever Cranium Corner"
+        ]
+
 class Server:
     def __init__(self):
         # Initialize server settings and variables
         self.udp_port = 13117  # UDP port for broadcasting server offer message
         self.tcp_port = 0  # TCP port for handling client connections
         self.MAGIC_COOKIE = 0xabcddcba.to_bytes(4, byteorder='big')  # Magic cookie for server identification
-        self.server_name = "The best trivia server ever"
+        self.server_name = choice(SERVER_NAMES)
         self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.offer_message = ''
         self.ip_address = socket.gethostbyname(socket.gethostname())
