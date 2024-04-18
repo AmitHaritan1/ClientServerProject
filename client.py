@@ -39,7 +39,22 @@ UNDERLINE = '\033[4m'
 ITALIC = '\033[3m'
 
 class Player:
+    """
+    A class representing a player in the trivia game.
+
+    Attributes:
+        name (str): The name of the player.
+        udp_listen_address (tuple): The address to listen for UDP messages.
+        tcp_server_address (tuple): The address of the TCP server.
+        state (int): The current state of the player (looking for server, connecting to server, or in game mode).
+        MAGIC_COOKIE (bytes): The magic cookie used for communication.
+        tcp_client_socket (socket.socket): TCP client socket for communication with the server.
+        waiting_for_input (bool): Indicates if the player is waiting for input.
+    """
     def __init__(self):
+        """
+        Initializes the Player object.
+        """
         print("Client started, listening for offer requests")
         self.name = choice(entertaining_names) + '\n'  # randomly pick a name from the list
         # Define server address and port for UDP
@@ -53,6 +68,9 @@ class Player:
         self.waiting_for_input = False
 
     def _state_looking_for_server(self):
+        """
+        Handles the state of looking for a server and receiving offer messages.
+        """
         udp_client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp_client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         udp_client_socket.bind(self.udp_listen_address)
@@ -72,8 +90,10 @@ class Player:
                 return STATE_CONNECTING_TO_SERVER
             time.sleep(1)
 
-    # Function to handle state: Connecting to a server
     def _state_connecting_to_server(self):
+        """
+        Handles the state of connecting to a server.
+        """
         try:
             self.tcp_client_socket.connect(self.tcp_server_address)
             self.tcp_client_socket.sendall(self.name.encode('utf-8'))
@@ -84,6 +104,9 @@ class Player:
             return STATE_LOOKING_FOR_SERVER
 
     def _get_messages_from_server(self):
+        """
+        Receives and processes messages from the server.
+        """
         while True:
             try:
                 message = self.tcp_client_socket.recv(1024).decode('utf-8')
@@ -103,9 +126,10 @@ class Player:
         self.tcp_client_socket.close()
         self.state = STATE_LOOKING_FOR_SERVER
 
-
-    # Function to handle state: Game mode
     def _game_mode(self):
+        """
+        Handles the game mode state, including starting a listening thread for server messages.
+        """
         print("Entering game mode...\n")
         listen_thread = threading.Thread(target=self._get_messages_from_server)
         listen_thread.start()
@@ -115,7 +139,16 @@ class Player:
 
 
 class Client(Player):
+    """
+    A class representing a client in the trivia game.
+
+    Attributes:
+        Inherits attributes from Player class.
+    """
     def __init__(self):
+        """
+        Initializes the Client object.
+        """
         super().__init__()
 
     # # Function to handle state: Looking for a server
@@ -168,6 +201,9 @@ class Client(Player):
     #             #self.tcp_client_socket.close()
 
     def _get_user_input(self):
+        """
+        Gets user input and sends it to the server.
+        """
         while True: #TODO: consider changing the condition
             if self.state == STATE_GAME_MODE:
                 try:
@@ -187,6 +223,9 @@ class Client(Player):
 
     # Main function to run the client
     def run_client(self):
+        """
+        Main function to run the client, including starting a thread for user input.
+        """
         keyboard_thread = threading.Thread(target=self._get_user_input)
         keyboard_thread.start()
         while True:  # TODO: CHANGE IT TO DIFFERENT CONDITION
