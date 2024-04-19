@@ -1,5 +1,3 @@
-from socket import socket
-
 from client import Player
 import random
 
@@ -71,7 +69,7 @@ class Bot(Player):
         """
         Runs the bot client, handling server connections and game logic.
         """
-        while True:  # TODO: CHANGE IT TO DIFFERENT CONDITION
+        while True:  # TODO: CHANGE IT TO DIFFERENT CONDITION and check all Thile True
             if self.state == STATE_LOOKING_FOR_SERVER:
                 self.state = self._state_looking_for_server()
             elif self.state == STATE_CONNECTING_TO_SERVER:
@@ -82,7 +80,7 @@ class Bot(Player):
 
 
 
-# Create an instance of the GameClient class and run the client
+# Create an instance of the GameBot class and run the Bot
 if __name__ == "__main__":
     bot = Bot()
     bot.run_bot()

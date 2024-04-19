@@ -238,10 +238,6 @@ class Server:
             print(f"Player {player_name} connected.")
             self.clients[client_socket]=player_name
             self.client_scores[player_name] = 0
-            # Implement game logic here
-            # TODO: make sure that someone starts the game
-            # TODO: make sure to close the client socket when the game is over
-            #client_socket.close()
         except Exception as e:
             print(f"Error handling client: {e}")
 
