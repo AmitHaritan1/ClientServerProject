@@ -13,6 +13,7 @@ class Bot(Player):
         tcp_client_socket (socket.socket): TCP client socket for communication with the server.
         state (int): The current state of the bot player (looking for server, connecting to server, or in game mode).
     """
+
     def __init__(self):
         """
         Initializes the Bot object.
@@ -40,9 +41,9 @@ class Bot(Player):
                     break
                 else:
                     print(message)
-                    if message.find('True or False:') >=0: self.send_ans()
+                    if message.find('True or False:') >= 0: self.send_ans()
 
-            except ConnectionResetError as e:
+            except ConnectionResetError as e1:
                 break
             except Exception as e:
                 print("Error while getting message from the server:", e)
@@ -53,7 +54,6 @@ class Bot(Player):
         print("Server disconnected, listening for offer requests...")
         self.tcp_client_socket.close()
         self.state = STATE_LOOKING_FOR_SERVER
-
 
     def send_ans(self):
         """
@@ -69,15 +69,13 @@ class Bot(Player):
         """
         Runs the bot client, handling server connections and game logic.
         """
-        while True:  # TODO: CHANGE IT TO DIFFERENT CONDITION and check all Thile True
+        while True:
             if self.state == STATE_LOOKING_FOR_SERVER:
                 self.state = self._state_looking_for_server()
             elif self.state == STATE_CONNECTING_TO_SERVER:
                 self.state = self._state_connecting_to_server()
             elif self.state == STATE_GAME_MODE:
                 self._game_mode()
-
-
 
 
 # Create an instance of the GameBot class and run the Bot

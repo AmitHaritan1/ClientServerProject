@@ -4,7 +4,6 @@ import time
 from random import shuffle
 from random import choice
 
-
 # ANSI color codes
 # Defining ANSI color codes for better console output readability
 RED = '\033[91m'
@@ -16,7 +15,6 @@ CYAN = '\033[96m'
 RESET = '\033[0m'
 PINK = '\033[95m'
 
-
 # ANSI text style codes
 # Defining ANSI text style codes for better console output readability
 BOLD = '\033[1m'
@@ -25,22 +23,23 @@ ITALIC = '\033[3m'
 
 # List of possible server names
 SERVER_NAMES = [
-            "IntellectIQ Trivia",
-            "Brainy Banter Barracks",
-            "Witty Wisdom Wharf",
-            "Quirky Quiz Quarters",
-            "Cogito Clubhouse",
-            "SmartyPants Society",
-            "Whizbang Wits Workshop",
-            "Riddle Realm Retreat",
-            "Brainiac Buzz Brigade",
-            "Clever Conundrum Cove",
-            "Brainbox Buffet",
-            "Puzzle Palace",
-            "Trivia Trove",
-            "Noggin Nook",
-            "Clever Cranium Corner"
-        ]
+    "IntellectIQ Trivia",
+    "Brainy Banter Barracks",
+    "Witty Wisdom Wharf",
+    "Quirky Quiz Quarters",
+    "Cogito Clubhouse",
+    "SmartyPants Society",
+    "Whizbang Wits Workshop",
+    "Riddle Realm Retreat",
+    "Brainiac Buzz Brigade",
+    "Clever Conundrum Cove",
+    "Brainbox Buffet",
+    "Puzzle Palace",
+    "Trivia Trove",
+    "Noggin Nook",
+    "Clever Cranium Corner"
+]
+
 
 class Server:
     """
@@ -67,6 +66,7 @@ class Server:
         current_question_index (int): Index of the current trivia question.
         invalid_answer_message (str): Message for invalid answer received.
         """
+
     def __init__(self):
         """
         Initializes the Server object with default settings and variables.
@@ -85,7 +85,7 @@ class Server:
         self.client_scores = {}
         self.client_answers = {}
         self.legal_answers = ['Y', 'T', '1', 'N', 'F', '0']
-        self.answer_uses = {answer:0 for answer in self.legal_answers}
+        self.answer_uses = {answer: 0 for answer in self.legal_answers}
         self.answer_uses['illegal'] = 0
         self.answer_uses['no answer'] = 0
         self.global_answer_uses = self.answer_uses
@@ -189,7 +189,6 @@ class Server:
         self.current_question_index = 0
         self.invalid_answer_message = "Invalid answer received. The only valid answers are: Y/T/1 for a True statement, or N/F/0 for a false statement."
 
-
     # Function to handle UDP broadcast
     def _send_offer(self):
         """
@@ -204,7 +203,6 @@ class Server:
         while time.time() - self.last_client_join_time < 10 or not self.clients:
             udp_server_socket.sendto(self.offer_message, ('<broadcast>', self.udp_port))
             # print("Offer message sent")  # optional printing server UDP broadcast
-            # TODO: drop prints when finished debugging
             time.sleep(1)
         self.game_mode = True
         udp_server_socket.close()
@@ -223,7 +221,6 @@ class Server:
                 threading.Thread(target=self._handle_client, args=(client_socket,)).start()
             except socket.error as e:
                 time.sleep(1)
-        # TODO: think what do we want to do with clients connecting to the server once the game started
 
     # Function to handle individual client
     def _handle_client(self, client_socket):
@@ -236,7 +233,7 @@ class Server:
         try:
             player_name = client_socket.recv(1024).decode('utf-8').strip()
             print(f"Player {player_name} connected.")
-            self.clients[client_socket]=player_name
+            self.clients[client_socket] = player_name
             self.client_scores[player_name] = 0
         except Exception as e:
             print(f"Error handling client: {e}")
@@ -256,7 +253,7 @@ class Server:
             else:
                 correct_answer = ['N', 'F', '0']
             return question, correct_answer
-        else: # No more questions available
+        else:  # No more questions available
             shuffle(self.trivia_questions)
             self.current_question_index = 0
             return self._next_question()
@@ -299,8 +296,8 @@ class Server:
             except ConnectionError:
                 self._disconnect_client(client_socket)
             except Exception as e:
-                #player_name = self.clients[client_socket]
-                #print(f"Error while sending info to client {player_name}: {e}")
+                # player_name = self.clients[client_socket]
+                # print(f"Error while sending info to client {player_name}: {e}")
                 print(f"Error while sending info to client: {e}")
 
     def _welcome_message(self):
@@ -312,9 +309,9 @@ class Server:
         client_sockets = list(self.clients.keys())
         for i, (name, client_socket) in enumerate(zip(client_names, client_sockets)):
             if client_socket in self.clients.keys():
-                welcome += f"\nPlayer {i+1}: {name}"
+                welcome += f"\nPlayer {i + 1}: {name}"
         self._send_to_all_clients(welcome)
-        end = "="*30
+        end = "=" * 30
         client_names = list(self.clients.values())
         client_sockets = list(self.clients.keys())
         for (client_name, client_socket) in zip(client_names, client_sockets):
@@ -354,7 +351,7 @@ class Server:
         """
         Starts the trivia game.
         """
-        self.answer_uses = {answer:0 for answer in self.answer_uses.keys()}
+        self.answer_uses = {answer: 0 for answer in self.answer_uses.keys()}
         self._welcome_message()
         shuffle(self.trivia_questions)
         game_round = 0
@@ -436,15 +433,19 @@ class Server:
                     print(f"{winner_name} wins! 🏆")
                     self._send_to_all_clients(f"{winner_name} wins! 🏆")
                     print("Game over!")
-                    print(f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points! 🎮🎉")
-                    self._send_to_all_clients(YELLOW + f"\nCongratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points!\n" + RESET)
+                    print(
+                        f"Congratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points! 🎮🎉")
+                    self._send_to_all_clients(
+                        YELLOW + f"\nCongratulations to the winner: {winner_name}, with {self.client_scores[winner_name]} points!\n" + RESET)
                     self._send_to_all_clients("Game over!")
 
                 elif len(correct_clients) > 1 and len(correct_clients) != len(self.clients):
                     for client_socket, answer in zip(client_sockets, client_answers):
                         if answer not in correct_answer:
                             try:
-                                client_socket.sendall(f"You lost - Game over! 👎 \n In this game you earned {self.client_scores[self.clients[client_socket]]} points".encode('utf-8'))
+                                client_socket.sendall(
+                                    f"You lost - Game over! 👎 \n In this game you earned {self.client_scores[self.clients[client_socket]]} points".encode(
+                                        'utf-8'))
                             except ConnectionError:
                                 if self._disconnect_client(client_socket) == 0:
                                     print("All players quit, Game over! sending out offer requests...")
@@ -513,7 +514,6 @@ class Server:
             udp_thread.join()
             tcp_thread.join()
             self._start_game()
-
 
 
 # Create an instance of the GameServer class and start the server
