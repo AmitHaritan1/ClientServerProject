@@ -203,7 +203,7 @@ class Server:
         udp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         while time.time() - self.last_client_join_time < 10 or not self.clients:
             udp_server_socket.sendto(self.offer_message, ('<broadcast>', self.udp_port))
-            print("Offer message sent")
+            # print("Offer message sent")  # optional printing server UDP broadcast
             # TODO: drop prints when finished debugging
             time.sleep(1)
         self.game_mode = True
