@@ -2,6 +2,7 @@ import socket
 import threading
 import time
 from random import shuffle
+from random import choice
 
 
 # ANSI color codes
@@ -22,13 +23,58 @@ BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
 ITALIC = '\033[3m'
 
+# List of possible server names
+SERVER_NAMES = [
+            "IntellectIQ Trivia",
+            "Brainy Banter Barracks",
+            "Witty Wisdom Wharf",
+            "Quirky Quiz Quarters",
+            "Cogito Clubhouse",
+            "SmartyPants Society",
+            "Whizbang Wits Workshop",
+            "Riddle Realm Retreat",
+            "Brainiac Buzz Brigade",
+            "Clever Conundrum Cove",
+            "Brainbox Buffet",
+            "Puzzle Palace",
+            "Trivia Trove",
+            "Noggin Nook",
+            "Clever Cranium Corner"
+        ]
+
 class Server:
+    """
+    A class representing a trivia game server.
+
+    Attributes:
+        udp_port (int): The UDP port for broadcasting server offer messages.
+        tcp_port (int): The TCP port for handling client connections.
+        MAGIC_COOKIE (bytes): Magic cookie for server identification.
+        server_name (str): The name of the server.
+        tcp_server_socket (socket.socket): TCP server socket.
+        offer_message (str): The message to be broadcasted to clients.
+        ip_address (str): The IP address of the server.
+        clients (dict): A dictionary to store connected clients.
+        last_client_join_time (float): Timestamp for the last client connection.
+        game_mode (bool): Flag indicating whether the game is in progress.
+        client_scores (dict): A dictionary to store client scores.
+        client_answers (dict): A dictionary to store client answers.
+        legal_answers (list): List of legal answer options.
+        answer_uses (dict): A dictionary to store the count of each answer.
+        global_answer_uses (dict): A dictionary to store the global count of each answer.
+        all_time_wins (dict): A dictionary to store all-time wins of clients.
+        trivia_questions (list): List of tuples containing trivia questions and answers.
+        current_question_index (int): Index of the current trivia question.
+        invalid_answer_message (str): Message for invalid answer received.
+        """
     def __init__(self):
-        # Initialize server settings and variables
+        """
+        Initializes the Server object with default settings and variables.
+        """
         self.udp_port = 13117  # UDP port for broadcasting server offer message
         self.tcp_port = 0  # TCP port for handling client connections
         self.MAGIC_COOKIE = 0xabcddcba.to_bytes(4, byteorder='big')  # Magic cookie for server identification
-        self.server_name = "The best trivia server ever"
+        self.server_name = choice(SERVER_NAMES)
         self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.offer_message = ''
         self.ip_address = socket.gethostbyname(socket.gethostname())
@@ -164,6 +210,10 @@ class Server:
         udp_server_socket.close()
 
     def _handle_tcp_connection(self):
+        """
+        Handles TCP connections with clients.
+        This function runs in a separate thread.
+        """
         while not self.game_mode:
             try:
                 client_socket, client_address = self.tcp_server_socket.accept()
@@ -177,6 +227,12 @@ class Server:
 
     # Function to handle individual client
     def _handle_client(self, client_socket):
+        """
+       Handles individual client connections and game logic.
+
+       Args:
+           client_socket (socket.socket): The socket object representing the client connection.
+       """
         try:
             player_name = client_socket.recv(1024).decode('utf-8').strip()
             print(f"Player {player_name} connected.")
@@ -190,6 +246,12 @@ class Server:
             print(f"Error handling client: {e}")
 
     def _next_question(self):
+        """
+        Retrieves the next trivia question and correct answer.
+
+        Returns:
+            tuple: A tuple containing the question (str) and correct answer (list of str).
+        """
         if self.current_question_index < len(self.trivia_questions):
             question, answer = self.trivia_questions[self.current_question_index]
             self.current_question_index += 1
@@ -204,10 +266,22 @@ class Server:
             return self._next_question()
 
     def _start_timer(self, start_time):
+        """
+        Starts a timer for a specified duration.
+
+        Args:
+            start_time (float): The start time of the timer.
+        """
         while time.time() - start_time < 10 and len(self.client_answers) < len(self.clients):
             time.sleep(1)
 
     def _print_round(self, game_round):
+        """
+        Prints the current round information.
+
+        Args:
+            game_round (int): The current round number.
+        """
         names = list(self.clients.values())
         if len(names) > 1:
             result = ', '.join(names[:-1]) + ' and ' + names[-1]
@@ -216,6 +290,12 @@ class Server:
         print(f"Round {game_round}, played by {result}:")
 
     def _send_to_all_clients(self, message):
+        """
+        Sends a message to all connected clients.
+
+        Args:
+            message (str): The message to send to clients.
+        """
         client_sockets = list(self.clients.keys())
         for client_socket in client_sockets:
             try:
@@ -228,6 +308,9 @@ class Server:
                 print(f"Error while sending info to client: {e}")
 
     def _welcome_message(self):
+        """
+        Sends a welcome message to all connected clients.
+        """
         welcome = CYAN + f"🥳🥳 Welcome to the \"{self.server_name}\" server, where we are answering intriguing trivia questions! 🥳🎗️\n" + RESET
         client_names = list(self.clients.values())
         client_sockets = list(self.clients.keys())
@@ -254,6 +337,15 @@ class Server:
         self._send_to_all_clients(end + "\n")
 
     def _disconnect_client(self, client_socket):
+        """
+        Disconnects a client from the server.
+
+        Args:
+            client_socket (socket.socket): The socket object representing the client connection.
+
+        Returns:
+            int: The number of remaining connected clients.
+        """
         client_name = self.clients.pop(client_socket, None)
         client_socket.close()
         if client_name:
@@ -263,6 +355,9 @@ class Server:
 
     # Function to start the game
     def _start_game(self):
+        """
+        Starts the trivia game.
+        """
         self.answer_uses = {answer:0 for answer in self.answer_uses.keys()}
         self._welcome_message()
         shuffle(self.trivia_questions)
@@ -381,7 +476,12 @@ class Server:
         self.current_question_index = 0
 
     def _print_statistics(self, winner_name):
-        # statistics:
+        """
+        Prints game statistics.
+
+        Args:
+            winner_name (str): The name of the winner.
+        """
         print()
         print(UNDERLINE + BOLD + "Game Statistics:" + RESET)
         for client in self.clients.keys():
@@ -401,7 +501,9 @@ class Server:
 
     # Main function to start the server
     def start_server(self):
-
+        """
+        Starts the server and handles client connections.
+        """
         print(f"server started, listening on IP address {self.ip_address}")
         while True:
             self.tcp_server_socket.bind(('', self.tcp_port))
